@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: #0d1017;
+    color: #f6f2e8;
+    font-family: 'Noto Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    /* казахские буквы ә ғ қ ң ө ұ ү һ і есть в Noto Sans; системные шрифты — запас */
+    overscroll-behavior: none;
+  }
+
+  /* игра занимает весь экран, страница не скроллится по горизонтали */
+  #root {
+    overflow-x: hidden;
+  }
+
+  button {
+    font-family: inherit;
+  }
+}
+
+@layer utilities {
+  .animate-pop {
+    animation: pop 1.8s ease-out forwards;
+  }
+}
+
+@keyframes pop {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.85);
+  }
+  18% {
+    opacity: 1;
+    transform: translateY(0) scale(1.06);
+  }
+  32% {
+    transform: scale(1);
+  }
+  78% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-22px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pop {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+  }
+}

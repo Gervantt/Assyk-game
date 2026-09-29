@@ -1,0 +1,93 @@
+import { Link } from 'react-router-dom'
+import { useT } from '@/i18n'
+import { LocaleSwitch } from '@/components/LocaleSwitch'
+import { Ornament } from '@/components/Ornament'
+import { loadBest } from '@/lib/storage'
+import { percent } from '@/lib/format'
+import type { DictKey } from '@/i18n'
+
+function ModeCard({ to, title, desc, primary = false }: {
+  to: string
+  title: string
+  desc: string
+  primary?: boolean
+}) {
+  return (
+    <Link
+      to={to}
+      className={`group flex min-h-[44px] flex-col gap-1 rounded-3xl p-5 ring-1 transition-transform active:scale-[0.98] ${
+        primary
+          ? 'bg-gold-400 text-night-900 ring-gold-500'
+          : 'bg-white/5 text-steppe-50 ring-white/10 hover:bg-white/10'
+      }`}
+    >
+      <span className="text-xl font-extrabold">{title}</span>
+      <span className={primary ? 'text-sm text-night-900/75' : 'text-sm text-steppe-300'}>
+        {desc}
+      </span>
+    </Link>
+  )
+}
+
+export function Home() {
+  const t = useT()
+  const best = loadBest('training')
+
+  const modes: Array<{ to: string; title: DictKey; desc: DictKey; primary?: boolean }> = [
+    { to: '/play/training', title: 'mode.training', desc: 'mode.training.desc', primary: true },
+    { to: '/play/hotseat', title: 'mode.hotseat', desc: 'mode.hotseat.desc' },
+  ]
+
+  return (
+    <div className="relative min-h-full overflow-y-auto bg-night-900">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-60"
+        style={{
+          background:
+            'radial-gradient(120% 70% at 50% -10%, #1d2a3d 0%, #0d1017 60%), radial-gradient(50% 40% at 80% 100%, #2a1f12 0%, transparent 70%)',
+        }}
+      />
+      <div className="relative mx-auto flex min-h-full w-full max-w-md flex-col gap-6 px-5 py-8">
+        <div className="flex justify-end">
+          <LocaleSwitch />
+        </div>
+
+        <header className="text-center">
+          <Ornament className="mx-auto mb-4 h-3 w-48 text-gold-500/70" />
+          <h1 className="text-4xl font-extrabold tracking-tight text-steppe-50">{t('app.title')}</h1>
+          <p className="mt-2 text-lg font-semibold text-gold-400">{t('app.tagline')}</p>
+          <p className="mt-1 text-sm text-steppe-300">{t('app.subtitle')}</p>
+        </header>
+
+        <nav className="flex flex-col gap-3">
+          {modes.map((m) => (
+            <ModeCard
+              key={m.to}
+              to={m.to}
+              title={t(m.title)}
+              desc={t(m.desc)}
+              primary={m.primary}
+            />
+          ))}
+          <Link
+            to="/rules"
+            className="flex min-h-[44px] items-center justify-center rounded-3xl bg-transparent p-4 text-sm font-semibold text-steppe-300 ring-1 ring-white/10 hover:bg-white/5"
+          >
+            {t('mode.rules')}
+          </Link>
+        </nav>
+
+        {best && (
+          <p className="text-center text-xs text-steppe-300">
+            {t('hud.best')}: <span className="font-bold text-steppe-50">{best.score}</span> ·{' '}
+            {percent(best.accuracy)}
+          </p>
+        )}
+
+        <footer className="mt-auto pt-6 text-center text-[11px] text-steppe-300/70">
+          Narxoz Incubator 2026 · {t('aim.hintKeyboard')}
+        </footer>
+      </div>
+    </div>
+  )
+}
