@@ -4,8 +4,8 @@ import { groundTextures } from './textures'
 
 /** Земля: песок с картой нормалей, сгенерированный кодом. */
 export function Ground() {
-  const { albedo, normal } = groundTextures(22)
-  const normalScale = useMemo(() => new THREE.Vector2(0.32, 0.32), [])
+  const { albedo, normal } = groundTextures(10)
+  const normalScale = useMemo(() => new THREE.Vector2(0.14, 0.14), [])
 
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>

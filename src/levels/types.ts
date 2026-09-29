@@ -1,4 +1,4 @@
-import type { FieldShape, LayoutKind } from '@/physics'
+import type { FieldShape, LayoutKind, SurfaceName } from '@/physics'
 import type { Locale } from '@/i18n'
 
 export type LocalisedText = Record<Locale, string>
@@ -41,6 +41,8 @@ export interface LevelDef {
   wind?: { x: number; y: number }
   obstacles?: LevelObstacle[]
   movers?: LevelMover[]
+  /** поверхность кона: только оформление уровня, к скинам отношения не имеет */
+  surface?: SurfaceName
 }
 
 export interface ChapterDef {

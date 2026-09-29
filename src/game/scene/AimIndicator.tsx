@@ -1,7 +1,7 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { estimatedRange, PHYSICS } from '@/physics'
+import { PHYSICS } from '@/physics'
 import { useAimStore } from '@/store/useAimStore'
 import { toSceneZ } from './coords'
 
@@ -27,7 +27,7 @@ export function AimIndicator({ hintLength }: { hintLength?: number }) {
     g.visible = aim.active
     if (!aim.active) return
 
-    const total = estimatedRange(aim.power) * fraction
+    const total = (PHYSICS.minSpeed + (PHYSICS.maxSpeed - PHYSICS.minSpeed) * aim.power) * 0.55 * fraction
     const startGap = PHYSICS.sakaRadius + 0.04
     for (let i = 0; i < DASHES; i++) {
       const m = dashes.current[i]

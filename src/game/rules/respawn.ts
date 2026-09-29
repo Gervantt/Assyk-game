@@ -1,4 +1,4 @@
-import { BODY_ASYK, PHYSICS, fieldContains, quantize, type WorldState } from '@/physics'
+import { BODY_ASYK, PHYSICS, STATE_RESTING, fieldContains, quantize, type WorldState } from '@/physics'
 
 /**
  * Свободное место в кону для асыка, возвращённого по штрафу.
@@ -44,9 +44,12 @@ export function returnAsykToField(world: WorldState): number | null {
   const slot = freeSlot(world)
   pick.x = slot.x
   pick.y = slot.y
+  pick.z = pick.radius
   pick.vx = 0
   pick.vy = 0
-  pick.spin = 0
+  pick.vz = 0
+  pick.omega = 0
+  pick.state = STATE_RESTING
   pick.outOfField = false
   pick.removed = false
   pick.scored = false

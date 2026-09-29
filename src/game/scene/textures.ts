@@ -68,14 +68,14 @@ export function groundTextures(repeat = 22): { albedo: THREE.Texture; normal: TH
   const nImg = nc.createImageData(SIZE, SIZE)
 
   // песок: тёплый светлый по гребням, тёмный в ложбинах
-  const light = { r: 202, g: 165, b: 108 }
-  const dark = { r: 146, g: 106, b: 57 }
+  const light = { r: 218, g: 190, b: 134 }
+  const dark = { r: 165, g: 125, b: 73 }
   const at = (x: number, y: number) => h[((y + SIZE) % SIZE) * SIZE + ((x + SIZE) % SIZE)]!
 
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < SIZE; x++) {
       const i = (y * SIZE + x) * 4
-      const t = Math.min(1, Math.max(0, (at(x, y) - 0.32) / 0.36))
+      const t = Math.min(1, Math.max(0, (at(x, y) - 0.24) / 0.52))
       aImg.data[i] = dark.r + (light.r - dark.r) * t
       aImg.data[i + 1] = dark.g + (light.g - dark.g) * t
       aImg.data[i + 2] = dark.b + (light.b - dark.b) * t

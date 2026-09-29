@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { PHYSICS, type SimEvent } from '@/physics'
-import { advancePlayback, getPlayback, playbackIsFinished } from '@/game/playback'
+import type { SimEvent } from '@/physics'
+import { advancePlayback, playbackIsFinished } from '@/game/playback'
 import { emitFx } from '@/game/fx/bus'
 import { addShake } from '@/game/fx/shake'
 import { playBoneHit, playSound } from '@/audio'
@@ -18,14 +18,12 @@ import { useGameStore } from '@/store/useGameStore'
  */
 export function PlaybackDriver() {
   const knockCount = useRef(0)
-  const landed = useRef(false)
 
   useFrame((_, delta) => {
     const { phase, finishPlayback, pushToast } = useGameStore.getState()
     if (phase !== 'animating') {
       // между бросками счётчики должны быть чистыми, иначе комбо «переедет»
       knockCount.current = 0
-      landed.current = false
       return
     }
 
@@ -34,24 +32,8 @@ export function PlaybackDriver() {
 
     for (const e of fired) handleEvent(e, rich, knockCount, pushToast)
 
-    // приземление сақа после дуги полёта: пыль, отпечаток, глухой удар
-    const pb = getPlayback()
-    if (!landed.current && pb.t >= PHYSICS.flightTicks * PHYSICS.dt) {
-      landed.current = true
-      const frame = pb.frames[Math.min(Math.floor(pb.t / (PHYSICS.dt * PHYSICS.frameEvery)), pb.frames.length - 1)]
-      const saka = frame?.bodies[0]
-      if (saka && !saka.removed) {
-        playSound('thud', { volume: 0.45 })
-        if (rich) {
-          emitFx({ t: 'dust', x: saka.x, y: saka.y, power: 0.55 })
-          emitFx({ t: 'decal', x: saka.x, y: saka.y, size: 1 })
-        }
-      }
-    }
-
     if (playbackIsFinished()) {
       knockCount.current = 0
-      landed.current = false
       finishPlayback()
     }
   })
@@ -66,7 +48,18 @@ function handleEvent(
   pushToast: (key: 'event.qos' | 'event.keremet' | 'event.knock', tone: 'good' | 'combo') => void,
 ): void {
   switch (e.type) {
-    case 'hit': {
+    case 'groundImpact': {
+      // настоящее касание земли из симуляции: пыль, отпечаток, глухой удар
+      const hard = Math.min(1, e.speed / 4)
+      playSound('thud', { volume: 0.25 + hard * 0.45, rate: 0.9 + hard * 0.4 })
+      if (rich && e.speed > 0.6) {
+        emitFx({ t: 'dust', x: e.x, y: e.y, power: hard })
+        emitFx({ t: 'decal', x: e.x, y: e.y, size: 0.6 + hard * 0.6 })
+        addShake(Math.min(0.03, e.speed * 0.006))
+      }
+      break
+    }
+    case 'bodyHit': {
       const impulse = Math.abs(e.impulse)
       playBoneHit(impulse)
       if (rich) {

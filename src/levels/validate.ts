@@ -1,4 +1,4 @@
-import { PHYSICS } from '@/physics'
+import { PHYSICS, surfaceAt, SURFACE_SAND } from '@/physics'
 import type { ChapterDef, LevelDef } from './types'
 
 /**
@@ -51,11 +51,15 @@ function validateLevel(l: LevelDef, source: string, ids: Set<string>): void {
     fail('maxPower должен быть в диапазоне (0, 1]')
   }
 
-  const windCap = PHYSICS.friction * 0.8
+  const windCap = surfaceAt(SURFACE_SAND).muSlide * PHYSICS.g * 0.8
   if (l.wind) {
     if (Math.abs(l.wind.x) > windCap || Math.abs(l.wind.y) > windCap) {
       fail(`ветер сильнее ${windCap.toFixed(2)} м/с² будет обрезан движком`)
     }
+  }
+
+  if (l.surface && !['sand', 'dirt', 'asphalt', 'ice'].includes(l.surface)) {
+    fail(`неизвестная поверхность «${l.surface}»`)
   }
 
   for (const o of l.obstacles ?? []) {

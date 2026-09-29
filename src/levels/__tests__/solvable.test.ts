@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { aimFromAngle, DEFAULT_THROW_LINE_Y, makeThrow } from '@/physics'
+import { aimFromAngles, DEFAULT_THROW_LINE_Y, makeThrow } from '@/physics'
 import { applyThrow, createMatch, knockedOutCount, type MatchState } from '@/game/rules'
 import {
   CAMPAIGN,
@@ -17,10 +17,12 @@ import {
  * в бюджет бросков, живой игрок тем более не уложится.
  */
 
-const ANGLES = 21
-const POWERS = 7
+/** перебор по трём осям: поворот, угол подъёма и сила */
+const YAWS = 9
+const ELEVATIONS = [5, 14, 25, 38]
+const POWERS = 5
 /** прицел от «прямо вперёд» в радианах */
-const SPREAD = 0.45
+const SPREAD = 0.4
 const BEAM = 2
 
 const SEED = 4242
@@ -28,11 +30,15 @@ const ORIGIN = { x: 0, y: DEFAULT_THROW_LINE_Y }
 
 function candidates(level: CampaignLevel) {
   const out = []
-  for (let a = 0; a < ANGLES; a++) {
-    const angle = Math.PI / 2 - SPREAD + (2 * SPREAD * a) / (ANGLES - 1)
-    for (let p = 0; p < POWERS; p++) {
-      const power = 0.18 + (0.82 * p) / (POWERS - 1)
-      out.push(makeThrow(aimFromAngle(angle, power), ORIGIN, level.maxPower ?? 1))
+  for (let a = 0; a < YAWS; a++) {
+    const yaw = -SPREAD + (2 * SPREAD * a) / (YAWS - 1)
+    for (const deg of ELEVATIONS) {
+      for (let p = 0; p < POWERS; p++) {
+        const power = 0.2 + (0.8 * p) / (POWERS - 1)
+        out.push(
+          makeThrow(aimFromAngles(yaw, (deg * Math.PI) / 180, power), ORIGIN, level.maxPower ?? 1),
+        )
+      }
     }
   }
   return out

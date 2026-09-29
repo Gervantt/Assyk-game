@@ -30,12 +30,11 @@ export function scoreThrow(
 ): ScoreOutcome {
   const knockedOut: number[] = []
 
-  for (const e of events) {
-    if (e.type !== 'knockOut') continue
-    const body = world.bodies.find((b) => b.id === e.bodyId)
-    if (!body || body.kind !== BODY_ASYK) continue
-    // защита от двойного начисления: очко идёт только за асық, который
-    // прямо сейчас вне кона и ещё не оплачен (правило 3)
+  // Очки считаются ТОЛЬКО по финальному состоянию покоя. События knockOut
+  // нужны эффектам: асық мог вылететь за линию в воздухе и вернуться обратно —
+  // такой не выбит. Флаг scored защищает от повторного начисления (правило 3).
+  for (const body of world.bodies) {
+    if (body.kind !== BODY_ASYK) continue
     if (body.scored || !body.outOfField) continue
     body.scored = true
     knockedOut.push(body.id)
@@ -43,7 +42,7 @@ export function scoreThrow(
 
   const combo = comboFor(knockedOut.length)
   const bonus = comboBonus(combo, rules.comboBonus)
-  const sakaStoppedInside = events.some((e) => e.type === 'sakaStoppedInside')
+  const sakaStoppedInside = events.some((e) => e.type === 'sakaRest' && e.inside)
   const sakaLost = events.some((e) => e.type === 'sakaLost')
 
   let penalty = 0

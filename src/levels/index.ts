@@ -1,4 +1,4 @@
-import { createWorld, type CreateWorldOptions } from '@/physics'
+import { createWorld, surfaceByName, type CreateWorldOptions } from '@/physics'
 import aul from './chapters/01-aul.json'
 import aula from './chapters/02-aula.json'
 import qala from './chapters/03-qala.json'
@@ -56,6 +56,7 @@ export function worldOptionsFor(level: LevelDef, seed: number): CreateWorldOptio
     obstacles: level.obstacles?.map((o) => ({ x: o.x, y: o.y, radius: o.radius })),
     movers: level.movers,
     wind: level.wind,
+    surfaceId: level.surface ? surfaceByName(level.surface) : undefined,
   }
 }
 
@@ -81,6 +82,7 @@ export function worldExtrasFor(level: LevelDef) {
     obstacles: level.obstacles?.map((o) => ({ x: o.x, y: o.y, radius: o.radius })),
     movers: level.movers,
     wind: level.wind,
+    surfaceId: level.surface ? surfaceByName(level.surface) : undefined,
   }
 }
 

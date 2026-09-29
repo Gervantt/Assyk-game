@@ -1,6 +1,7 @@
-import { PHYSICS } from './config'
+import { PHYSICS, STATE_RESTING } from './config'
 import { quantize } from './math'
 import { rngIntAt } from './rng'
+import { SURFACE_SAND, surfaceAt } from './surfaces'
 import {
   BODY_ASYK,
   BODY_SAKA,
@@ -94,11 +95,13 @@ export interface CreateWorldOptions {
   movers?: MoverSpec[]
   /** наклон поля: постоянное ускорение, м/с^2 */
   wind?: { x: number; y: number }
+  /** поверхность кона: задаётся уровнем или режимом, но НЕ скином арены */
+  surfaceId?: number
 }
 
 /** Собирает стартовый мир: сақа на линии броска (id 0) + асыки в кону. */
 export function createWorld(opts: CreateWorldOptions): WorldState {
-  const fieldRadius = opts.layout.fieldRadius ?? 1.15
+  const fieldRadius = opts.layout.fieldRadius ?? 0.85
   const field: Field = { shape: opts.layout.shape ?? 'circle', cx: 0, cy: 0, radius: fieldRadius }
   const throwLineY = opts.throwLineY ?? DEFAULT_THROW_LINE_Y
 
@@ -107,12 +110,17 @@ export function createWorld(opts: CreateWorldOptions): WorldState {
     kind: BODY_SAKA,
     x: 0,
     y: throwLineY,
+    z: PHYSICS.sakaRadius,
     vx: 0,
     vy: 0,
+    vz: 0,
     radius: PHYSICS.sakaRadius,
     mass: PHYSICS.sakaMass,
-    angle: 0,
-    spin: 0,
+    height: PHYSICS.sakaHeight,
+    tumble: 0,
+    omega: 0,
+    yaw: 0,
+    state: STATE_RESTING,
     outOfField: true,
     removed: false,
     side: 0,
@@ -127,12 +135,17 @@ export function createWorld(opts: CreateWorldOptions): WorldState {
       kind: BODY_ASYK,
       x: p.x,
       y: p.y,
+      z: PHYSICS.asykRadius,
       vx: 0,
       vy: 0,
+      vz: 0,
       radius: PHYSICS.asykRadius,
       mass: PHYSICS.asykMass,
-      angle: 0,
-      spin: 0,
+      height: PHYSICS.asykHeight,
+      tumble: 0,
+      omega: 0,
+      yaw: 0,
+      state: STATE_RESTING,
       outOfField: false,
       removed: false,
       side: rngIntAt(opts.seed, 1000 + i, 4),
@@ -149,12 +162,17 @@ export function createWorld(opts: CreateWorldOptions): WorldState {
       kind: BODY_ASYK,
       x: quantize(m.x),
       y: quantize(m.y),
+      z: PHYSICS.asykRadius,
       vx: 0,
       vy: 0,
+      vz: 0,
       radius: PHYSICS.asykRadius,
       mass: PHYSICS.asykMass,
-      angle: 0,
-      spin: 0,
+      height: PHYSICS.asykHeight,
+      tumble: 0,
+      omega: 0,
+      yaw: 0,
+      state: STATE_RESTING,
       outOfField: false,
       removed: false,
       side: rngIntAt(opts.seed, 2000 + id, 4),
@@ -177,12 +195,17 @@ export function createWorld(opts: CreateWorldOptions): WorldState {
       kind: BODY_STONE,
       x: quantize(o.x),
       y: quantize(o.y),
+      z: quantize(o.radius),
       vx: 0,
       vy: 0,
+      vz: 0,
       radius: quantize(o.radius),
       mass: PHYSICS.asykMass,
-      angle: 0,
-      spin: 0,
+      height: quantize(o.radius),
+      tumble: 0,
+      omega: 0,
+      yaw: 0,
+      state: STATE_RESTING,
       outOfField: true,
       removed: false,
       side: 0,
@@ -191,7 +214,7 @@ export function createWorld(opts: CreateWorldOptions): WorldState {
   }
 
   // ветер сильнее трения превратил бы симуляцию в вечный разгон
-  const windCap = PHYSICS.friction * 0.8
+  const windCap = surfaceAt(opts.surfaceId ?? SURFACE_SAND).muSlide * PHYSICS.g * 0.8
   const wx = clampAbs(opts.wind?.x ?? 0, windCap)
   const wy = clampAbs(opts.wind?.y ?? 0, windCap)
 
@@ -203,6 +226,7 @@ export function createWorld(opts: CreateWorldOptions): WorldState {
       halfHeight: opts.boundsHalfHeight ?? 4.6,
       bounce: opts.bounceWalls ?? false,
     },
+    surfaceId: opts.surfaceId ?? SURFACE_SAND,
     windX: quantize(wx),
     windY: quantize(wy),
     movers,
@@ -222,6 +246,7 @@ export function cloneWorld(s: WorldState): WorldState {
     bodies: s.bodies.map((b) => ({ ...b })),
     field: { ...s.field },
     bounds: { ...s.bounds },
+    surfaceId: s.surfaceId,
     windX: s.windX,
     windY: s.windY,
     movers: s.movers.map((m) => ({ ...m })),

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createWorld } from '../world'
 import { simulate } from '../simulate'
 import { stateHash } from '../hash'
-import { makeThrow, aimFromPull } from '../aim'
+import { makeThrow, aimFromAngles } from '../aim'
 import { mulberry32, rngAt, seedFromString } from '../rng'
 import { quantize } from '../math'
 import { DEFAULT_THROW_LINE_Y } from '../world'
@@ -13,10 +13,7 @@ function world() {
   return createWorld({ seed: SEED, layout: { kind: 'row', count: 5 } })
 }
 
-const throwUp = makeThrow(
-  aimFromPull({ dx: 0.2, dy: -1.4, maxPull: 1.6 }),
-  { x: 0, y: DEFAULT_THROW_LINE_Y },
-)
+const throwUp = makeThrow(aimFromAngles(0.12, 0.35, 0.72), { x: 0, y: DEFAULT_THROW_LINE_Y })
 
 describe('детерминизм симуляции', () => {
   it('1000 прогонов одного и того же броска дают один и тот же хеш', () => {
@@ -85,7 +82,7 @@ describe('чистота модуля physics', () => {
   it('в шаге симуляции нет sin/cos/atan/random', async () => {
     const fs = await import('node:fs/promises')
     const path = await import('node:path')
-    for (const f of ['step.ts', 'simulate.ts', 'hash.ts', 'field.ts']) {
+    for (const f of ['step.ts', 'simulate.ts', 'hash.ts', 'field.ts', 'toss.ts']) {
       const src = await fs.readFile(path.resolve(__dirname, '..', f), 'utf8')
       expect(src, `${f}`).not.toMatch(/Math\.(sin|cos|tan|atan2?|random|pow|hypot)/)
     }

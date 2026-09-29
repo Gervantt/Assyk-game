@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { aimFromAngle, aimFromPull, makeThrow, type AimState, type WorldState } from '@/physics'
+import { AIM, aimFromAngles, aimFromPull, clamp, makeThrow, PHYSICS, type AimState, type WorldState } from '@/physics'
 import { useAimStore } from '@/store/useAimStore'
 import { useGameStore } from '@/store/useGameStore'
 
@@ -38,8 +38,11 @@ export function AimLayer({ world, enabled, maxPower = 1, gate }: AimLayerProps) 
 
   const update = useCallback(
     (dxPx: number, dyPx: number) => {
-      // экран: +x вправо, +y вниз. Мир: +x вправо, +y от игрока. Отсюда знак у dy.
-      const aim = aimFromPull({ dx: dxPx, dy: -dyPx, maxPull: maxPullPx() })
+      // Тянем назад — бросок вперёд. Горизонтальная часть тяги поворачивает
+      // направление, вертикальная задаёт угол подъёма, длина — силу.
+      const max = maxPullPx()
+      const yaw = clamp(-(dxPx / max) * AIM.maxYaw * 2, -AIM.maxYaw, AIM.maxYaw)
+      const aim = aimFromPull(yaw, { dx: dxPx, dy: dyPx, maxPull: max })
       useAimStore.setState({ ...aim, originX: origin.x, originY: origin.y })
     },
     [origin.x, origin.y],
@@ -73,9 +76,10 @@ export function AimLayer({ world, enabled, maxPower = 1, gate }: AimLayerProps) 
     release()
   }
 
-  // --- клавиатура (доступность): стрелки — угол, пробел удерживать — сила ---
-  const keys = useRef({ left: false, right: false, space: false })
-  const angle = useRef(Math.PI / 2)
+  // --- клавиатура (доступность): стрелки — поворот, W/S — подъём, пробел — сила ---
+  const keys = useRef({ left: false, right: false, up: false, down: false, space: false })
+  const yaw = useRef(0)
+  const elevation = useRef(PHYSICS.maxElevation * 0.35)
   const power = useRef(0)
 
   useEffect(() => {
@@ -87,12 +91,14 @@ export function AimLayer({ world, enabled, maxPower = 1, gate }: AimLayerProps) 
       const dt = Math.min((now - prev) / 1000, 0.05)
       prev = now
       const k = keys.current
-      if (k.left) angle.current += KEY_ANGLE_RATE * dt
-      if (k.right) angle.current -= KEY_ANGLE_RATE * dt
+      if (k.left) yaw.current = Math.max(-AIM.maxYaw, yaw.current - KEY_ANGLE_RATE * dt)
+      if (k.right) yaw.current = Math.min(AIM.maxYaw, yaw.current + KEY_ANGLE_RATE * dt)
+      if (k.up) elevation.current = Math.min(PHYSICS.maxElevation, elevation.current + KEY_ANGLE_RATE * dt)
+      if (k.down) elevation.current = Math.max(0, elevation.current - KEY_ANGLE_RATE * dt)
       if (k.space) power.current = Math.min(1, power.current + KEY_POWER_RATE * dt)
-      if (k.left || k.right || k.space) {
+      if (k.left || k.right || k.up || k.down || k.space) {
         useAimStore.setState({
-          ...aimFromAngle(angle.current, Math.max(power.current, 0.02)),
+          ...aimFromAngles(yaw.current, elevation.current, Math.max(power.current, 0.02)),
           originX: origin.x,
           originY: origin.y,
         })
@@ -104,6 +110,8 @@ export function AimLayer({ world, enabled, maxPower = 1, gate }: AimLayerProps) 
     const down = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') keys.current.left = true
       else if (e.key === 'ArrowRight') keys.current.right = true
+      else if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') keys.current.up = true
+      else if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') keys.current.down = true
       else if (e.code === 'Space') {
         e.preventDefault()
         keys.current.space = true
@@ -112,10 +120,12 @@ export function AimLayer({ world, enabled, maxPower = 1, gate }: AimLayerProps) 
     const up = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') keys.current.left = false
       else if (e.key === 'ArrowRight') keys.current.right = false
+      else if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') keys.current.up = false
+      else if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') keys.current.down = false
       else if (e.code === 'Space') {
         keys.current.space = false
         if (power.current > 0) {
-          const aim = aimFromAngle(angle.current, power.current)
+          const aim = aimFromAngles(yaw.current, elevation.current, power.current)
           if (!gate || gate(aim)) throwSaka(makeThrow(aim, origin, maxPower))
           power.current = 0
           useAimStore.getState().reset()

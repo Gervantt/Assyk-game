@@ -18,7 +18,7 @@
         "kind": "row",
         "count": 3,
         "spacing": 0.54,
-        "fieldRadius": 1.25
+        "fieldRadius": 0.93
       },
       "obstacles": [
         {
@@ -27,11 +27,11 @@
           "radius": 0.2
         }
       ],
-      "throws": 4,
+      "throws": 5,
       "goal": 2,
       "stars": [
-        2,
-        3
+        3,
+        4
       ]
     },
     {
@@ -39,7 +39,7 @@
       "layout": {
         "kind": "pyramid",
         "count": 6,
-        "fieldRadius": 1.25
+        "fieldRadius": 0.93
       },
       "obstacles": [
         {
@@ -53,11 +53,11 @@
           "radius": 0.3
         }
       ],
-      "throws": 5,
-      "goal": 3,
+      "throws": 4,
+      "goal": 6,
       "stars": [
-        3,
-        4
+        2,
+        3
       ]
     },
     {
@@ -65,7 +65,7 @@
       "layout": {
         "kind": "circle",
         "count": 5,
-        "fieldRadius": 1.3
+        "fieldRadius": 0.96
       },
       "obstacles": [
         {
@@ -84,11 +84,11 @@
           "radius": 0.17
         }
       ],
-      "throws": 5,
-      "goal": 3,
+      "throws": 7,
+      "goal": 5,
       "stars": [
-        3,
-        4
+        5,
+        6
       ]
     },
     {
@@ -96,7 +96,7 @@
       "layout": {
         "kind": "row",
         "count": 2,
-        "fieldRadius": 1.25
+        "fieldRadius": 0.93
       },
       "movers": [
         {
@@ -107,11 +107,11 @@
           "periodSec": 1.8
         }
       ],
-      "throws": 5,
-      "goal": 2,
+      "throws": 4,
+      "goal": 3,
       "stars": [
-        3,
-        4
+        2,
+        3
       ]
     },
     {
@@ -119,7 +119,7 @@
       "layout": {
         "kind": "row",
         "count": 0,
-        "fieldRadius": 1.3
+        "fieldRadius": 0.96
       },
       "movers": [
         {
@@ -137,11 +137,11 @@
           "periodSec": 2.4
         }
       ],
-      "throws": 6,
+      "throws": 4,
       "goal": 2,
       "stars": [
-        3,
-        5
+        2,
+        3
       ]
     },
     {
@@ -149,7 +149,7 @@
       "layout": {
         "kind": "pyramid",
         "count": 6,
-        "fieldRadius": 1.25
+        "fieldRadius": 0.93
       },
       "obstacles": [
         {
@@ -172,11 +172,11 @@
           "periodSec": 2.0
         }
       ],
-      "throws": 6,
-      "goal": 4,
+      "throws": 4,
+      "goal": 7,
       "stars": [
-        3,
-        4
+        2,
+        3
       ]
     }
   ]

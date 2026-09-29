@@ -16,19 +16,19 @@ interface Pose {
   x: number
   y: number
   z: number
-  angle: number
-  side: number
+  tumble: number
+  yaw: number
   visible: boolean
 }
 
 /** Позы всех тел в момент времени t (сек) от начала броска. */
-function poseFromFrames(frames: Frame[], t: number, sides: Map<number, number>, out: Map<number, Pose>) {
+function poseFromFrames(frames: Frame[], t: number, out: Map<number, Pose>) {
   const last = frames[frames.length - 1]!
   const raw = t / FRAME_DT
   const i = Math.floor(raw)
   if (i >= frames.length - 1) {
     for (const b of last.bodies) {
-      out.set(b.id, { x: b.x, y: b.y, z: b.z, angle: b.angle, side: sides.get(b.id) ?? 0, visible: !b.removed })
+      out.set(b.id, { x: b.x, y: b.y, z: b.z, tumble: b.tumble, yaw: b.yaw, visible: !b.removed })
     }
     return
   }
@@ -42,8 +42,8 @@ function poseFromFrames(frames: Frame[], t: number, sides: Map<number, number>, 
       x: pa.x + (pb.x - pa.x) * k,
       y: pa.y + (pb.y - pa.y) * k,
       z: pa.z + (pb.z - pa.z) * k,
-      angle: pa.angle + (pb.angle - pa.angle) * k,
-      side: sides.get(pa.id) ?? 0,
+      tumble: pa.tumble + (pb.tumble - pa.tumble) * k,
+      yaw: pa.yaw + (pb.yaw - pa.yaw) * k,
       visible: !pa.removed,
     })
   }
@@ -53,10 +53,17 @@ function restPose(world: WorldState, out: Map<number, Pose>) {
   for (const b of world.bodies) {
     if (b.kind === BODY_SAKA) {
       // между бросками сақа всегда лежит на линии броска — игрок её подобрал
-      out.set(b.id, { x: 0, y: world.throwLineY, z: 0, angle: b.angle, side: 0, visible: true })
+      out.set(b.id, {
+        x: 0,
+        y: world.throwLineY,
+        z: b.radius,
+        tumble: b.tumble,
+        yaw: b.yaw,
+        visible: true,
+      })
       continue
     }
-    out.set(b.id, { x: b.x, y: b.y, z: 0, angle: b.angle, side: b.side, visible: !b.removed })
+    out.set(b.id, { x: b.x, y: b.y, z: b.z, tumble: b.tumble, yaw: b.yaw, visible: !b.removed })
   }
 }
 
@@ -101,9 +108,8 @@ function Stones({ world }: { world: WorldState }) {
  * frames[] симуляции: заранее записанных анимаций нет.
  */
 export function Bodies({ world }: { world: WorldState }) {
-  const { geometry } = useAsykModel()
+  const { geometry, map } = useAsykModel()
   const asyks = useMemo(() => world.bodies.filter((b) => b.kind === BODY_ASYK), [world])
-  const sides = useMemo(() => new Map(world.bodies.map((b) => [b.id, b.side])), [world])
 
   const meshRef = useRef<THREE.InstancedMesh>(null)
   const sakaRef = useRef<THREE.Mesh>(null)
@@ -111,12 +117,15 @@ export function Bodies({ world }: { world: WorldState }) {
   const dummy = useMemo(() => new THREE.Object3D(), [])
   const poses = useMemo(() => new Map<number, Pose>(), [])
 
-  /** Высота центра над землёй для каждой из четырёх сторон падения. */
-  const lift = useMemo(() => {
+  /**
+   * Коллайдер — сфера радиуса radius, её центр в покое стоит на высоте radius.
+   * Меш плоский, поэтому рисуем его ниже центра сферы, иначе асық «парит».
+   */
+  const meshHalf = useMemo(() => {
     geometry.computeBoundingBox()
     const size = new THREE.Vector3()
     geometry.boundingBox!.getSize(size)
-    return [size.z / 2, size.z / 2, size.y / 2, size.y / 2]
+    return Math.min(size.x, size.y, size.z) / 2
   }, [geometry])
 
   useLayoutEffect(() => {
@@ -128,7 +137,7 @@ export function Bodies({ world }: { world: WorldState }) {
     const pb = getPlayback()
 
     if (phase === 'animating' && pb.active && pb.frames.length > 0) {
-      poseFromFrames(pb.frames, pb.t, sides, poses)
+      poseFromFrames(pb.frames, pb.t, poses)
     } else {
       restPose(world, poses)
     }
@@ -136,13 +145,13 @@ export function Bodies({ world }: { world: WorldState }) {
     const mesh = meshRef.current
     if (mesh) {
       const s = PHYSICS.asykRadius * VISUAL_SCALE
+      const drop = PHYSICS.asykRadius - meshHalf * s
       asyks.forEach((b, i) => {
         const p = poses.get(b.id)
         if (!p) return
-        const base = (lift[p.side] ?? lift[2]!) * s
-        dummy.position.set(p.x, p.z + base, toSceneZ(p.y))
-        // сторона падения — поворот вокруг длинной оси, рыскание — вокруг вертикали
-        dummy.rotation.set((p.side * Math.PI) / 2, p.angle, 0, 'YXZ')
+        dummy.position.set(p.x, p.z - drop, toSceneZ(p.y))
+        // кувыркание вокруг горизонтальной оси, рыскание вокруг вертикали
+        dummy.rotation.set(p.tumble, p.yaw, 0, 'YXZ')
         dummy.scale.setScalar(p.visible ? s : 0)
         dummy.updateMatrix()
         mesh.setMatrixAt(i, dummy.matrix)
@@ -154,8 +163,8 @@ export function Bodies({ world }: { world: WorldState }) {
     const sp = poses.get(0)
     if (saka && sp) {
       const s = PHYSICS.sakaRadius * VISUAL_SCALE
-      saka.position.set(sp.x, sp.z + lift[2]! * s, toSceneZ(sp.y))
-      saka.rotation.set(0, sp.angle, sp.z * 3.2, 'YXZ')
+      saka.position.set(sp.x, sp.z - (PHYSICS.sakaRadius - meshHalf * s), toSceneZ(sp.y))
+      saka.rotation.set(sp.tumble, sp.yaw, 0, 'YXZ')
       saka.scale.setScalar(s)
       saka.visible = sp.visible
     }
@@ -163,7 +172,7 @@ export function Bodies({ world }: { world: WorldState }) {
     // тень-пятно под сақа: сжимается и светлеет, когда сақа в воздухе
     const blob = shadowRef.current
     if (blob && sp) {
-      const k = Math.max(0, 1 - sp.z * 1.7)
+      const k = Math.max(0, 1 - (sp.z - PHYSICS.sakaRadius) * 1.1)
       blob.position.set(sp.x, 0.004, toSceneZ(sp.y))
       blob.scale.setScalar(Math.max(0.35, k))
       const mat = blob.material as THREE.MeshBasicMaterial
@@ -181,11 +190,12 @@ export function Bodies({ world }: { world: WorldState }) {
         receiveShadow
         frustumCulled={false}
       >
-        <meshStandardMaterial color={ASYK_COLOR} roughness={0.66} metalness={0.04} />
+        <meshStandardMaterial map={map} color={map ? '#ffffff' : ASYK_COLOR} roughness={0.66} metalness={0.04} />
       </instancedMesh>
 
       <mesh ref={sakaRef} geometry={geometry} castShadow receiveShadow frustumCulled={false}>
         <meshStandardMaterial
+          map={map}
           color={SAKA_COLOR}
           roughness={0.34}
           metalness={0.3}

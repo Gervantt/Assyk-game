@@ -18,12 +18,13 @@ export function hintForThrow(world: WorldState, events: SimEvent[]): HintKey {
   const saka = world.bodies.find((b) => b.kind === BODY_SAKA)
   const asykIds = new Set(world.bodies.filter((b) => b.kind === BODY_ASYK).map((b) => b.id))
 
-  const knocked = events.filter((e) => e.type === 'knockOut').length
+  // выбитым считается только тот, кто остановился за кругом
+  const knocked = world.bodies.filter((b) => b.kind === BODY_ASYK && b.outOfField).length
   const sakaHitAsyk = events.some(
-    (e) => e.type === 'hit' && ((e.a === 0 && asykIds.has(e.b)) || (e.b === 0 && asykIds.has(e.a))),
+    (e) => e.type === 'bodyHit' && ((e.a === 0 && asykIds.has(e.b)) || (e.b === 0 && asykIds.has(e.a))),
   )
   const lost = events.some((e) => e.type === 'sakaLost')
-  const stoppedInside = events.some((e) => e.type === 'sakaStoppedInside')
+  const stoppedInside = events.some((e) => e.type === 'sakaRest' && e.inside)
 
   if (knocked > 0) return stoppedInside ? 'hint.sakaInside' : 'hint.good'
   if (lost) return 'hint.overshoot'

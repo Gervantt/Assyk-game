@@ -17,13 +17,13 @@
       "layout": {
         "kind": "row",
         "count": 1,
-        "fieldRadius": 1.3
+        "fieldRadius": 0.96
       },
-      "throws": 3,
+      "throws": 4,
       "goal": 1,
       "stars": [
-        1,
-        2
+        2,
+        3
       ],
       "penalty": false
     },
@@ -32,9 +32,9 @@
       "layout": {
         "kind": "row",
         "count": 2,
-        "fieldRadius": 1.3
+        "fieldRadius": 0.96
       },
-      "throws": 3,
+      "throws": 4,
       "goal": 2,
       "stars": [
         2,
@@ -47,13 +47,13 @@
       "layout": {
         "kind": "row",
         "count": 3,
-        "fieldRadius": 1.25
+        "fieldRadius": 0.93
       },
-      "throws": 4,
-      "goal": 2,
+      "throws": 6,
+      "goal": 3,
       "stars": [
-        2,
-        3
+        4,
+        5
       ],
       "penalty": false
     },
@@ -62,13 +62,13 @@
       "layout": {
         "kind": "pyramid",
         "count": 3,
-        "fieldRadius": 1.25
+        "fieldRadius": 0.93
       },
       "throws": 4,
       "goal": 3,
       "stars": [
-        3,
-        4
+        2,
+        3
       ]
     },
     {
@@ -76,13 +76,13 @@
       "layout": {
         "kind": "row",
         "count": 5,
-        "fieldRadius": 1.2
+        "fieldRadius": 0.89
       },
-      "throws": 5,
-      "goal": 3,
+      "throws": 7,
+      "goal": 4,
       "stars": [
-        3,
-        4
+        5,
+        6
       ]
     },
     {
@@ -90,10 +90,10 @@
       "layout": {
         "kind": "circle",
         "count": 5,
-        "fieldRadius": 1.25
+        "fieldRadius": 0.93
       },
       "throws": 5,
-      "goal": 4,
+      "goal": 5,
       "stars": [
         3,
         4

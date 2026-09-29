@@ -1,30 +1,24 @@
 import { describe, expect, it } from 'vitest'
-import {
-  BODY_ASYK,
-  DEFAULT_THROW_LINE_Y,
-  aimFromPull,
-  createWorld,
-  fieldContains,
-  makeThrow,
-  simulate,
-  type SimEvent,
-} from '@/physics'
+import { BODY_ASYK, createWorld, fieldContains, simulate, type SimEvent } from '@/physics'
+import { findThrow } from './helpers'
 import { DEFAULT_RULES } from '../config'
 import { scoreThrow } from '../scoring'
 import { comboBonus, comboFor } from '../combo'
 import { returnAsykToField } from '../respawn'
 
-function pull(dx: number, dy: number) {
-  return makeThrow(aimFromPull({ dx, dy, maxPull: 1.6 }), { x: 0, y: DEFAULT_THROW_LINE_Y })
-}
-
-/** Краевой удар: выбивает асық, но сақа рикошетом покидает кон (штрафа нет). */
-const KNOCKOUT_THROW = pull(-0.18, -1.5)
 const NO_PENALTY = { ...DEFAULT_RULES, sakaInFieldPenalty: false }
+
+const row5 = () => createWorld({ seed: 5, layout: { kind: 'row', count: 5 } })
+const row3 = () => createWorld({ seed: 5, layout: { kind: 'row', count: 3 } })
+
+/** Бросок, который выбивает асық и уводит сақа из кона — штрафа быть не должно. */
+const KNOCKOUT_THROW = findThrow(row5, (o) => o.knocked >= 1 && !o.insideAfter && !o.lost)
+/** Бросок, который выбивает, но оставляет сақа в кону — сработает правило 5. */
+const STUCK_THROW = findThrow(row3, (o) => o.knocked >= 1 && o.insideAfter)
 
 describe('начисление очков', () => {
   it('каждый асық приносит очко только один раз (флаг scored)', () => {
-    const w = createWorld({ seed: 5, layout: { kind: 'row', count: 5 } })
+    const w = row5()
     const sim = simulate(w, KNOCKOUT_THROW)
     const world = sim.finalState
 
@@ -41,9 +35,9 @@ describe('начисление очков', () => {
   })
 
   it('асық, вернувшийся в кон, снова разыгрывается — но счёт при этом сошёлся', () => {
-    const w = createWorld({ seed: 5, layout: { kind: 'row', count: 3 } })
-    // центральный удар: асық выбит, но сақа гаснет и замирает в кону
-    const sim = simulate(w, pull(0, -1.5))
+    const w = row3()
+    // сақа гаснет и замирает в кону: срабатывает правило 5
+    const sim = simulate(w, STUCK_THROW)
     const out = scoreThrow(sim.finalState, sim.events, DEFAULT_RULES, 0)
     expect(out.points).toBe(1)
     expect(out.penalty).toBe(1)
@@ -55,7 +49,7 @@ describe('начисление очков', () => {
   })
 
   it('выбитым считается асық, центр которого покинул кон', () => {
-    const w = createWorld({ seed: 5, layout: { kind: 'row', count: 5 } })
+    const w = row5()
     const sim = simulate(w, KNOCKOUT_THROW)
     for (const b of sim.finalState.bodies) {
       if (b.kind !== BODY_ASYK) continue
@@ -65,9 +59,10 @@ describe('начисление очков', () => {
   })
 
   it('штраф за сақа в кону: −1 очко и асық возвращается в кон', () => {
-    const w = createWorld({ seed: 5, layout: { kind: 'row', count: 3 } })
-    // краевой удар: асық выбит, сақа рикошетом уходит из кона — штрафа нет
-    const first = simulate(w, KNOCKOUT_THROW)
+    const w = row3()
+    // сначала бросок без штрафа: асық выбит, сақа ушла из кона
+    const clean = findThrow(row3, (o) => o.knocked >= 1 && !o.insideAfter && !o.lost)
+    const first = simulate(w, clean)
     const afterFirst = scoreThrow(first.finalState, first.events, DEFAULT_RULES, 0)
     expect(afterFirst.points).toBeGreaterThan(0)
     expect(afterFirst.penalty).toBe(0)
@@ -75,9 +70,12 @@ describe('начисление очков', () => {
       (b) => b.kind === BODY_ASYK && !b.outOfField,
     ).length
 
-    // мягкий бросок: сақа замирает внутри кона
-    const soft = simulate(first.finalState, pull(0, -0.62))
-    expect(soft.events.some((e) => e.type === 'sakaStoppedInside')).toBe(true)
+    // теперь бросок, оставляющий сақа в кону. Ищем его по уже изменившемуся
+    // кону: после первого броска асыков стало меньше
+    const after = first.finalState
+    const stuck = findThrow(() => structuredClone(after), (o) => o.insideAfter)
+    const soft = simulate(after, stuck)
+    expect(soft.events.some((e) => e.type === 'sakaRest' && e.inside)).toBe(true)
     const penalised = scoreThrow(soft.finalState, soft.events, DEFAULT_RULES, afterFirst.points)
     expect(penalised.penalty).toBe(1)
     expect(penalised.returnedAsyk).not.toBeNull()
@@ -88,18 +86,21 @@ describe('начисление очков', () => {
   })
 
   it('штраф не уводит счёт в минус, когда нечего возвращать', () => {
-    const w = createWorld({ seed: 5, layout: { kind: 'row', count: 3 } })
-    const soft = simulate(w, pull(0, -0.62))
+    const w = createWorld({ seed: 5, layout: { kind: 'row', count: 0, fieldRadius: 1.4 } })
+    const soft = simulate(w, findThrow(
+      () => createWorld({ seed: 5, layout: { kind: 'row', count: 0, fieldRadius: 1.4 } }),
+      (o) => o.insideAfter,
+    ))
     const out = scoreThrow(soft.finalState, soft.events, DEFAULT_RULES, 0)
     expect(out.penalty).toBe(0)
     expect(out.returnedAsyk).toBeNull()
   })
 
   it('штраф можно отключить в вариантах правил', () => {
-    const w = createWorld({ seed: 5, layout: { kind: 'row', count: 3 } })
-    const first = simulate(w, KNOCKOUT_THROW)
+    const w = row3()
+    const first = simulate(w, STUCK_THROW)
     scoreThrow(first.finalState, first.events, DEFAULT_RULES, 0)
-    const soft = simulate(first.finalState, pull(0, -0.62))
+    const soft = simulate(first.finalState, STUCK_THROW)
     const out = scoreThrow(soft.finalState, soft.events, { ...DEFAULT_RULES, sakaInFieldPenalty: false }, 1)
     expect(out.penalty).toBe(0)
   })

@@ -9,7 +9,7 @@ interface AimStore extends AimState {
   reset: () => void
 }
 
-const IDLE: AimState = { dirX: 0, dirY: 1, power: 0, active: false }
+const IDLE: AimState = { dirX: 0, dirY: 1, elevation: 0, power: 0, active: false }
 
 /**
  * Состояние прицела обновляется на каждое движение указателя.

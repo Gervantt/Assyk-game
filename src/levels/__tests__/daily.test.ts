@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { aimFromAngle, DEFAULT_THROW_LINE_Y, makeThrow, simulate } from '@/physics'
+import { aimFromAngles, DEFAULT_THROW_LINE_Y, makeThrow, simulate } from '@/physics'
 import { applyThrow, createMatch, knockedOutCount } from '@/game/rules'
 import { createLevelWorld, rulesFor, worldExtrasFor } from '..'
 import { dailyLevel, dailySeed, DAILY_THROWS, todayISO } from '../daily'
@@ -61,17 +61,25 @@ describe('ежедневное испытание', () => {
       })
 
       let best = 0
-      for (let a = 0; a < 15 && best === 0; a++) {
-        const angle = Math.PI / 2 - 0.4 + (0.8 * a) / 14
-        for (let p = 0; p < 5 && best === 0; p++) {
-          const power = 0.3 + (0.7 * p) / 4
-          const input = makeThrow(aimFromAngle(angle, power), { x: 0, y: DEFAULT_THROW_LINE_Y })
-          const r = simulate(match.world, input)
-          best = Math.max(best, knockedOutCount(r.finalState))
+      for (let a = 0; a < 9 && best === 0; a++) {
+        const yaw = -0.36 + (0.72 * a) / 8
+        for (const deg of [6, 16, 28]) {
+          if (best > 0) break
+          for (let p = 0; p < 5 && best === 0; p++) {
+            const power = 0.3 + (0.7 * p) / 4
+            const input = makeThrow(aimFromAngles(yaw, (deg * Math.PI) / 180, power), {
+              x: 0,
+              y: DEFAULT_THROW_LINE_Y,
+            })
+            best = Math.max(best, knockedOutCount(simulate(match.world, input).finalState))
+          }
         }
       }
       expect(best, `${date}: ни один бросок не выбил асық`).toBeGreaterThan(0)
-      match = applyThrow(match, makeThrow(aimFromAngle(Math.PI / 2, 0.8), { x: 0, y: DEFAULT_THROW_LINE_Y })).match
+      match = applyThrow(
+        match,
+        makeThrow(aimFromAngles(0, 0.2, 0.8), { x: 0, y: DEFAULT_THROW_LINE_Y }),
+      ).match
       expect(match.players[0]!.throwsUsed).toBe(1)
     }
   })

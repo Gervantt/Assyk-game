@@ -1,8 +1,7 @@
 import {
   createWorld,
-  rngIntAt,
+  drawFirstByToss,
   type CreateWorldOptions,
-  SIDES,
   simulate,
   stateHash,
   type LayoutSpec,
@@ -22,24 +21,17 @@ import type {
   ThrowSummary,
 } from './types'
 
-/** Приоритет сторон при жеребьёвке: алшы > тәйкі > бүк > шік. */
-const SIDE_RANK: Record<SideName, number> = { alshy: 3, tayki: 2, buk: 1, shik: 0 }
-
 /**
- * Очерёдность (правило 7): каждый подбрасывает сақа, сторона берётся из seed.
- * Возвращает индекс начинающего и результаты подбросов.
+ * Очерёдность (правило 7): каждый подбрасывает сақа — той же физикой, что
+ * и в игре. Выпавшая сторона решает, кто начинает (алшы > тәйкі > бүк > шік).
+ * Отклонения берутся из seed матча, поэтому результат воспроизводим.
  */
 export function drawFirstPlayer(
   seed: number,
   playerCount: number,
 ): { first: number; tosses: SideName[] } {
-  const tosses: SideName[] = []
-  for (let i = 0; i < playerCount; i++) tosses.push(SIDES[rngIntAt(seed, 500 + i, SIDES.length)]!)
-  let first = 0
-  for (let i = 1; i < playerCount; i++) {
-    if (SIDE_RANK[tosses[i]!] > SIDE_RANK[tosses[first]!]) first = i
-  }
-  return { first, tosses }
+  const { first, tosses } = drawFirstByToss(seed, playerCount)
+  return { first, tosses: tosses.map((t) => t.name) }
 }
 
 function player(index: number, name: string): PlayerState {
@@ -133,7 +125,7 @@ export function applyThrow(match: MatchState, input: ThrowInput): ApplyThrowResu
     bonus: outcome.bonus,
     sakaStoppedInside: outcome.sakaStoppedInside,
     sakaLost: outcome.sakaLost,
-    hits: sim.events.filter((e) => e.type === 'hit').length,
+    hits: sim.events.filter((e) => e.type === 'bodyHit').length,
     resultHash: stateHash(world),
     hint: hintForThrow(world, sim.events),
   }

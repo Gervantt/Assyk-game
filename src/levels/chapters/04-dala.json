@@ -17,14 +17,14 @@
       "layout": {
         "kind": "row",
         "count": 4,
-        "fieldRadius": 1.25
+        "fieldRadius": 0.93
       },
       "wind": {
         "x": 0.7,
         "y": 0
       },
       "throws": 5,
-      "goal": 3,
+      "goal": 4,
       "stars": [
         3,
         4
@@ -35,17 +35,17 @@
       "layout": {
         "kind": "pyramid",
         "count": 6,
-        "fieldRadius": 1.25
+        "fieldRadius": 0.93
       },
       "wind": {
         "x": -1.0,
         "y": 0
       },
-      "throws": 5,
-      "goal": 4,
+      "throws": 4,
+      "goal": 6,
       "stars": [
-        4,
-        5
+        2,
+        3
       ]
     },
     {
@@ -53,11 +53,11 @@
       "layout": {
         "kind": "row",
         "count": 4,
-        "fieldRadius": 1.0
+        "fieldRadius": 0.74
       },
       "maxPower": 0.78,
       "throws": 5,
-      "goal": 3,
+      "goal": 4,
       "stars": [
         3,
         4
@@ -69,7 +69,7 @@
       "layout": {
         "kind": "circle",
         "count": 6,
-        "fieldRadius": 1.1
+        "fieldRadius": 0.81
       },
       "maxPower": 0.85,
       "wind": {
@@ -77,9 +77,9 @@
         "y": -0.3
       },
       "throws": 6,
-      "goal": 3,
+      "goal": 6,
       "stars": [
-        3,
+        4,
         5
       ],
       "penalty": false
@@ -89,7 +89,7 @@
       "layout": {
         "kind": "pyramid",
         "count": 6,
-        "fieldRadius": 1.25
+        "fieldRadius": 0.93
       },
       "wind": {
         "x": -0.8,
@@ -102,11 +102,11 @@
           "radius": 0.26
         }
       ],
-      "throws": 6,
-      "goal": 3,
+      "throws": 4,
+      "goal": 6,
       "stars": [
-        4,
-        5
+        2,
+        3
       ]
     },
     {
@@ -114,7 +114,7 @@
       "layout": {
         "kind": "pyramid",
         "count": 10,
-        "fieldRadius": 1.2
+        "fieldRadius": 0.89
       },
       "wind": {
         "x": 0.55,
@@ -142,11 +142,11 @@
           "periodSec": 2.2
         }
       ],
-      "throws": 7,
-      "goal": 4,
+      "throws": 5,
+      "goal": 11,
       "stars": [
-        4,
-        6
+        3,
+        4
       ]
     }
   ]

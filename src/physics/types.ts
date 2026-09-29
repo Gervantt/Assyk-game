@@ -1,7 +1,10 @@
 /**
- * Asyq League — детерминированный 2D физический движок.
+ * Asyq League — детерминированный физический движок 2.5D.
  *
- * ВАЖНО: этот модуль не импортирует React, three, zustand и типы косметики.
+ * Игра логически трёхмерна: сақа летит по дуге, бьётся о землю, отскакивает,
+ * скользит и останавливается. Коллайдер — сфера, меш рисуется поверх неё.
+ *
+ * ВАЖНО: этот модуль не импортирует React, three, zustand, скины и арены.
  * Внутри шага симуляции разрешены только + - * / и Math.sqrt.
  */
 
@@ -12,25 +15,35 @@ export const BODY_SAKA = 1
 export const BODY_STONE = 2
 export type BodyKind = typeof BODY_ASYK | typeof BODY_SAKA | typeof BODY_STONE
 
+/** Фаза жизни тела: в воздухе, скользит по земле, лежит. */
+export type BodyState = 0 | 1 | 2
+
 export interface Body {
   id: number
   kind: BodyKind
-  /** позиция на плоскости земли, метры */
+  /** центр коллайдера, метры. z отсчитывается от земли, в покое z = radius */
   x: number
   y: number
+  z: number
   /** скорость, м/с */
   vx: number
   vy: number
+  vz: number
   radius: number
   mass: number
-  /** визуальный угол и угловая скорость — на физику не влияют */
-  angle: number
-  spin: number
-  /** центр тела вышел за границу кона (для асыка = выбит) */
+  /** высота меша над землёй в покое — только для рисования */
+  height: number
+  /** кувыркание вокруг горизонтальной оси: угол и угловая скорость */
+  tumble: number
+  omega: number
+  /** рыскание вокруг вертикали — чистый визуал */
+  yaw: number
+  state: BodyState
+  /** тело остановилось за границей кона (для асыка = выбит) */
   outOfField: boolean
   /** тело покинуло пределы мира и больше не симулируется */
   removed: boolean
-  /** сторона, на которую лёг асық: 0 алшы, 1 тәйкі, 2 бүк, 3 шік (визуал + жеребьёвка) */
+  /** сторона, на которую лёг асық: 0 алшы, 1 тәйкі, 2 бүк, 3 шік */
   side: number
   /** правила: за этот асық уже начислено очко. Физика это поле НЕ читает. */
   scored: boolean
@@ -74,6 +87,8 @@ export interface WorldState {
   bodies: Body[]
   field: Field
   bounds: WorldBounds
+  /** индекс поверхности из SURFACES: задаётся уровнем, не скином */
+  surfaceId: number
   /** постоянное ускорение: наклон поля или ветер, м/с^2 */
   windX: number
   windY: number
@@ -88,31 +103,51 @@ export interface WorldState {
 }
 
 /**
- * Вход броска. Направление и сила уже переведены в скорость и КВАНТОВАНЫ.
- * Именно эти числа уходят по сети — не угол и не сила в пикселях.
+ * Вход броска. Направление, угол подъёма и сила уже переведены в скорость
+ * и КВАНТОВАНЫ. Именно эти числа уходят по сети — не угол и не пиксели тяги.
  */
 export interface ThrowInput {
   vx: number
   vy: number
-  /** позиция старта сақа на линии броска (квантована) */
+  vz: number
+  /** начальная подкрутка, влияет только на кувыркание меша */
+  spin: number
   originX: number
   originY: number
 }
 
 export type SimEvent =
-  | { type: 'hit'; tick: number; a: number; b: number; impulse: number; x: number; y: number }
+  /** касание земли: для пыли, отпечатка и звука поверхности */
+  | { type: 'groundImpact'; tick: number; bodyId: number; speed: number; x: number; y: number }
+  /** столкновение тел; inAir — цель была в воздухе («Тура!») */
+  | {
+      type: 'bodyHit'
+      tick: number
+      a: number
+      b: number
+      impulse: number
+      inAir: boolean
+      x: number
+      y: number
+      z: number
+    }
+  /** асық пересёк линию поля — только для эффекта, очко считается по покою */
   | { type: 'knockOut'; tick: number; bodyId: number; x: number; y: number }
+  /** сақа прошла впритирку и не задела */
+  | { type: 'nearMiss'; tick: number; bodyId: number; distance: number }
   | { type: 'wallBounce'; tick: number; bodyId: number; impulse: number }
-  | { type: 'sakaStoppedInside'; tick: number; x: number; y: number }
+  /** сақа остановилась: inside — внутри кона (штраф по правилу 5) */
+  | { type: 'sakaRest'; tick: number; inside: boolean; x: number; y: number }
   | { type: 'sakaLost'; tick: number }
 
-/** Кадр для анимации. z — чисто визуальная высота (физика 2D). */
+/** Кадр для анимации. */
 export interface FrameBody {
   id: number
   x: number
   y: number
   z: number
-  angle: number
+  tumble: number
+  yaw: number
   removed: boolean
 }
 

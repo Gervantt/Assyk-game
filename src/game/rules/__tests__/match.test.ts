@@ -1,17 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_THROW_LINE_Y, aimFromPull, asyksInField, makeThrow, type ThrowInput } from '@/physics'
+import { asyksInField, createWorld } from '@/physics'
+import { findThrow } from './helpers'
 import { accuracy, applyThrow, createMatch, drawFirstPlayer, restartMatch } from '../match'
 import { konIsEmpty, leader, nextPlayer } from '../turn'
 import type { MatchState } from '../types'
 
-function pull(dx: number, dy: number): ThrowInput {
-  return makeThrow(aimFromPull({ dx, dy, maxPull: 1.6 }), { x: 0, y: DEFAULT_THROW_LINE_Y })
-}
+const row5 = () => createWorld({ seed: 5, layout: { kind: 'row', count: 5 } })
+const row1 = () => createWorld({ seed: 5, layout: { kind: 'row', count: 1 } })
 
-/** Краевой удар — выбивает и не оставляет сақа в кону. */
-const HIT = pull(-0.18, -1.5)
-/** Заведомый промах в сторону. */
-const MISS = pull(-0.85, -1.5)
+/** Бросок, который выбивает асық и не оставляет сақа в кону. */
+const HIT = findThrow(row5, (o) => o.knocked >= 1 && !o.insideAfter && !o.lost)
+/** Заведомый промах: никого не задел и сақа не в кону. */
+const MISS = findThrow(row5, (o) => !o.hit && !o.insideAfter && !o.lost)
+/** Бросок, выбивающий единственный асық. */
+const HIT_SINGLE = findThrow(row1, (o) => o.knocked >= 1)
+/** Выбивает единственный асық и при этом сақа остаётся в кону — сработает правило 5. */
+const HIT_SINGLE_STUCK = findThrow(row1, (o) => o.knocked >= 1 && o.insideAfter)
 
 function training(count = 5): MatchState {
   return createMatch({
@@ -81,7 +85,7 @@ describe('режим «тренировка»', () => {
       playerNames: ['Сен'],
       rules: { sakaInFieldPenalty: false },
     })
-    m = applyThrow(m, pull(0, -1.5)).match
+    m = applyThrow(m, HIT_SINGLE).match
     expect(konIsEmpty(m.world)).toBe(true)
     expect(m.status).toBe('finished')
     expect(m.players[0]!.throwsUsed).toBe(1)
@@ -89,7 +93,7 @@ describe('режим «тренировка»', () => {
 
   it('штраф может вернуть последний асық и продлить раунд', () => {
     let m = training(1)
-    const r = applyThrow(m, pull(0, -1.5))
+    const r = applyThrow(m, HIT_SINGLE_STUCK)
     expect(r.summary.points).toBe(1)
     expect(r.summary.penalty).toBe(1)
     expect(r.summary.returnedAsyk).not.toBeNull()

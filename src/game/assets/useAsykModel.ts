@@ -5,7 +5,12 @@ import { normalizeAsyk, proceduralAsyk } from './asykGeometry'
 
 export const ASYK_MODEL_URL = '/models/asyk.glb'
 
-let cached: THREE.BufferGeometry | null = null
+interface AsykModelData {
+  geometry: THREE.BufferGeometry
+  map: THREE.Texture | null
+}
+
+let cached: AsykModelData | null = null
 let failed = false
 
 /**
@@ -15,9 +20,9 @@ let failed = false
  * Модель грузится без Suspense: если файла нет или он битый, игра молча
  * остаётся на примитиве и не показывает белый экран.
  */
-export function useAsykModel(): { geometry: THREE.BufferGeometry; fromModel: boolean } {
-  const fallback = useMemo(() => proceduralAsyk(), [])
-  const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(cached)
+export function useAsykModel(): AsykModelData & { fromModel: boolean } {
+  const fallback = useMemo(() => ({ geometry: proceduralAsyk(), map: null }), [])
+  const [model, setModel] = useState<AsykModelData | null>(cached)
 
   useEffect(() => {
     if (cached || failed) return
@@ -26,16 +31,23 @@ export function useAsykModel(): { geometry: THREE.BufferGeometry; fromModel: boo
       ASYK_MODEL_URL,
       (gltf) => {
         if (cancelled) return
-        let found: THREE.BufferGeometry | null = null
+        gltf.scene.updateMatrixWorld(true)
+        const meshes: THREE.Mesh[] = []
         gltf.scene.traverse((o) => {
-          if (!found && (o as THREE.Mesh).isMesh) found = (o as THREE.Mesh).geometry
+          if ((o as THREE.Mesh).isMesh) meshes.push(o as THREE.Mesh)
         })
+        const found = meshes[0]
         if (!found) {
           failed = true
           return
         }
-        cached = normalizeAsyk(found)
-        setGeometry(cached)
+        const sourceMaterial = Array.isArray(found.material) ? found.material[0] : found.material
+        const map = (sourceMaterial as THREE.MeshStandardMaterial).map ?? null
+        cached = {
+          geometry: normalizeAsyk(found.geometry.clone().applyMatrix4(found.matrixWorld)),
+          map,
+        }
+        setModel(cached)
       },
       undefined,
       () => {
@@ -48,5 +60,5 @@ export function useAsykModel(): { geometry: THREE.BufferGeometry; fromModel: boo
     }
   }, [])
 
-  return { geometry: geometry ?? fallback, fromModel: geometry !== null }
+  return { ...(model ?? fallback), fromModel: model !== null }
 }
