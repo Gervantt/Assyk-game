@@ -9,3 +9,6 @@ dist-ssr
 .DS_Store
 .claude-flow
 coverage
+
+# артефакт инкрементальной сборки TypeScript
+*.tsbuildinfo

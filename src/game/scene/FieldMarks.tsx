@@ -10,7 +10,7 @@ export function FieldMarks({ field, throwLineY }: { field: Field; throwLineY: nu
     <group>
       {field.shape === 'circle' ? (
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[field.cx, 0.006, toSceneZ(field.cy)]}>
-          <ringGeometry args={[field.radius - w, field.radius + w, 128]} />
+          <ringGeometry args={[field.radius - w, field.radius + w, 72]} />
           <meshBasicMaterial color={CHALK} transparent opacity={0.82} />
         </mesh>
       ) : (

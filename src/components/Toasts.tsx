@@ -3,9 +3,9 @@ import { useT } from '@/i18n'
 import { useGameStore } from '@/store/useGameStore'
 
 const TONE = {
-  good: 'text-gold-400',
-  bad: 'text-steppe-300',
-  combo: 'text-sky-450',
+  good: 'animate-pop text-3xl text-gold-400 sm:text-4xl',
+  bad: 'animate-pop text-2xl text-steppe-300 sm:text-3xl',
+  combo: 'animate-slam text-5xl text-sky-450 sm:text-7xl',
 } as const
 
 /** Всплывающие подписи о результате броска. */
@@ -16,16 +16,16 @@ export function Toasts() {
 
   useEffect(() => {
     if (toasts.length === 0) return
-    const timers = toasts.map((x) => window.setTimeout(() => dismiss(x.id), 1800))
+    const timers = toasts.map((x) => window.setTimeout(() => dismiss(x.id), 2000))
     return () => timers.forEach(clearTimeout)
   }, [toasts, dismiss])
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-1/3 flex flex-col items-center gap-1">
+    <div className="pointer-events-none absolute inset-x-0 top-[15%] flex flex-col items-center gap-1 px-4">
       {toasts.map((x) => (
         <div
           key={x.id}
-          className={`animate-pop text-center text-2xl font-extrabold drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] sm:text-4xl ${TONE[x.tone]}`}
+          className={`text-center font-extrabold uppercase tracking-tight drop-shadow-[0_3px_12px_rgba(0,0,0,0.9)] ${TONE[x.tone]}`}
         >
           {t(x.key)}
         </div>

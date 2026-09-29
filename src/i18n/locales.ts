@@ -34,6 +34,28 @@ export const dict = {
     en: 'Take turns on one device.',
   },
   'mode.rules': { kk: 'Ережелер', ru: 'Правила', en: 'Rules' },
+  'mode.settings': { kk: 'Баптаулар', ru: 'Настройки', en: 'Settings' },
+
+  'settings.title': { kk: 'Баптаулар', ru: 'Настройки', en: 'Settings' },
+  'settings.sound': { kk: 'Дыбыс', ru: 'Звук', en: 'Sound' },
+  'settings.volume': { kk: 'Дыбыс деңгейі', ru: 'Громкость', en: 'Volume' },
+  'settings.effects': { kk: 'Эффекттер', ru: 'Эффекты', en: 'Effects' },
+  'settings.effects.full': { kk: 'Толық', ru: 'Полные', en: 'Full' },
+  'settings.effects.reduced': { kk: 'Азайтылған', ru: 'Уменьшенные', en: 'Reduced' },
+  'settings.effects.hint': {
+    kk: 'Бөлшектер, баяу түсіру, дірілдеу және конфетти сөнеді. Әлсіз құрылғыларға ыңғайлы.',
+    ru: 'Отключает частицы, слоу-мо, тряску и конфетти. Пригодится на слабых устройствах.',
+    en: 'Turns off particles, slow-motion, shake and confetti. Useful on weaker devices.',
+  },
+  'settings.haptics': { kk: 'Діріл', ru: 'Вибрация', en: 'Vibration' },
+  'settings.haptics.hint': {
+    kk: 'Тек телефонда жұмыс істейді.',
+    ru: 'Работает только на телефоне.',
+    en: 'Phones only.',
+  },
+  'settings.language': { kk: 'Тіл', ru: 'Язык', en: 'Language' },
+  'settings.on': { kk: 'Қосулы', ru: 'Вкл', en: 'On' },
+  'settings.off': { kk: 'Өшірулі', ru: 'Выкл', en: 'Off' },
 
   'hud.score': { kk: 'Ұпай', ru: 'Счёт', en: 'Score' },
   'hud.throws': { kk: 'Лақтыру', ru: 'Броски', en: 'Throws' },

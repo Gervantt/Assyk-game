@@ -6,6 +6,9 @@ import { AimLayer } from '@/game/AimLayer'
 import { HUD } from '@/components/HUD'
 import { Toasts } from '@/components/Toasts'
 import { ResultsOverlay } from '@/components/ResultsOverlay'
+import { Confetti } from '@/components/Confetti'
+import { Popups } from '@/game/fx/Popups'
+import { usePopupStore } from '@/game/fx/popupStore'
 import { useT } from '@/i18n'
 import { useGameStore } from '@/store/useGameStore'
 
@@ -18,13 +21,17 @@ export function Play() {
   const phase = useGameStore((s) => s.phase)
   const start = useGameStore((s) => s.start)
   const leave = useGameStore((s) => s.leave)
+  const celebrate = useGameStore((s) => s.celebrate)
 
   const valid = MODES.includes(mode as MatchMode) ? (mode as MatchMode) : null
 
   useEffect(() => {
     if (!valid) return
     start(valid)
-    return () => leave()
+    return () => {
+      leave()
+      usePopupStore.getState().clear()
+    }
   }, [valid, start, leave])
 
   if (!valid) return <Navigate to="/" replace />
@@ -41,7 +48,9 @@ export function Play() {
       <GameCanvas world={match.world} />
       <AimLayer world={match.world} enabled={phase === 'aim'} />
       <HUD match={match} />
+      <Popups />
       <Toasts />
+      <Confetti active={celebrate} />
       {phase === 'finished' && <ResultsOverlay match={match} />}
     </div>
   )

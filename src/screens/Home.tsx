@@ -69,12 +69,22 @@ export function Home() {
               primary={m.primary}
             />
           ))}
-          <Link
-            to="/rules"
-            className="flex min-h-[44px] items-center justify-center rounded-3xl bg-transparent p-4 text-sm font-semibold text-steppe-300 ring-1 ring-white/10 hover:bg-white/5"
-          >
-            {t('mode.rules')}
-          </Link>
+          <div className="flex gap-3">
+            {(
+              [
+                { to: '/rules', key: 'mode.rules' },
+                { to: '/settings', key: 'mode.settings' },
+              ] as const
+            ).map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className="flex min-h-[44px] flex-1 items-center justify-center rounded-3xl bg-transparent p-4 text-sm font-semibold text-steppe-300 ring-1 ring-white/10 hover:bg-white/5"
+              >
+                {t(item.key)}
+              </Link>
+            ))}
+          </div>
         </nav>
 
         {best && (

@@ -2,39 +2,35 @@ import { useLayoutEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { BODY_ASYK, BODY_SAKA, PHYSICS, type Frame, type WorldState } from '@/physics'
+import { useAsykModel } from '@/game/assets/useAsykModel'
+import { FRAME_DT, getPlayback } from '@/game/playback'
 import { useGameStore } from '@/store/useGameStore'
-import { FRAME_DT, toSceneZ } from './coords'
+import { toSceneZ } from './coords'
 
-const ASYK_COLOR = '#f2e8d2'
-const SAKA_COLOR = '#d4402a'
-
-/** Геометрия асыка: сплюснутый капсулоид, лежащий на боку. */
-function useAsykGeometry(radius: number) {
-  return useMemo(() => {
-    const g = new THREE.CapsuleGeometry(radius * 0.62, radius * 1.05, 4, 14)
-    g.rotateZ(Math.PI / 2)
-    g.scale(1, 0.62, 0.88)
-    g.translate(0, radius * 0.38, 0)
-    return g
-  }, [radius])
-}
+const ASYK_COLOR = '#efe3c6'
+const SAKA_COLOR = '#c33a25'
+/** Длина модели относительно радиуса коллайдера. */
+const VISUAL_SCALE = 2.45
 
 interface Pose {
   x: number
   y: number
   z: number
   angle: number
+  side: number
   visible: boolean
 }
 
 /** Позы всех тел в момент времени t (сек) от начала броска. */
-function poseAt(frames: Frame[], t: number, out: Map<number, Pose>): boolean {
+function poseFromFrames(frames: Frame[], t: number, sides: Map<number, number>, out: Map<number, Pose>) {
   const last = frames[frames.length - 1]!
   const raw = t / FRAME_DT
   const i = Math.floor(raw)
   if (i >= frames.length - 1) {
-    for (const b of last.bodies) out.set(b.id, { x: b.x, y: b.y, z: b.z, angle: b.angle, visible: !b.removed })
-    return true
+    for (const b of last.bodies) {
+      out.set(b.id, { x: b.x, y: b.y, z: b.z, angle: b.angle, side: sides.get(b.id) ?? 0, visible: !b.removed })
+    }
+    return
   }
   const a = frames[i]!
   const b = frames[i + 1]!
@@ -47,60 +43,72 @@ function poseAt(frames: Frame[], t: number, out: Map<number, Pose>): boolean {
       y: pa.y + (pb.y - pa.y) * k,
       z: pa.z + (pb.z - pa.z) * k,
       angle: pa.angle + (pb.angle - pa.angle) * k,
+      side: sides.get(pa.id) ?? 0,
       visible: !pa.removed,
     })
   }
-  return false
 }
 
 function restPose(world: WorldState, out: Map<number, Pose>) {
   for (const b of world.bodies) {
     if (b.kind === BODY_SAKA) {
       // между бросками сақа всегда лежит на линии броска — игрок её подобрал
-      out.set(b.id, { x: 0, y: world.throwLineY, z: 0, angle: b.angle, visible: true })
+      out.set(b.id, { x: 0, y: world.throwLineY, z: 0, angle: b.angle, side: 0, visible: true })
       continue
     }
-    out.set(b.id, { x: b.x, y: b.y, z: 0, angle: b.angle, visible: !b.removed })
+    out.set(b.id, { x: b.x, y: b.y, z: 0, angle: b.angle, side: b.side, visible: !b.removed })
   }
 }
 
 /**
- * Рисует асыки (InstancedMesh) и сақа. Во время броска позиции берутся
- * из frames[] симуляции — никаких заранее заданных анимаций.
+ * Асыки (InstancedMesh) и сақа — один и тот же меш из public/models/asyk.glb,
+ * отличаются материалом и размером. Во время броска позиции берутся из
+ * frames[] симуляции: заранее записанных анимаций нет.
  */
 export function Bodies({ world }: { world: WorldState }) {
+  const { geometry } = useAsykModel()
   const asyks = useMemo(() => world.bodies.filter((b) => b.kind === BODY_ASYK), [world])
-  const asykGeo = useAsykGeometry(PHYSICS.asykRadius)
-  const sakaGeo = useAsykGeometry(PHYSICS.sakaRadius)
+  const sides = useMemo(() => new Map(world.bodies.map((b) => [b.id, b.side])), [world])
+
   const meshRef = useRef<THREE.InstancedMesh>(null)
   const sakaRef = useRef<THREE.Mesh>(null)
+  const shadowRef = useRef<THREE.Mesh>(null)
   const dummy = useMemo(() => new THREE.Object3D(), [])
   const poses = useMemo(() => new Map<number, Pose>(), [])
+
+  /** Высота центра над землёй для каждой из четырёх сторон падения. */
+  const lift = useMemo(() => {
+    geometry.computeBoundingBox()
+    const size = new THREE.Vector3()
+    geometry.boundingBox!.getSize(size)
+    return [size.z / 2, size.z / 2, size.y / 2, size.y / 2]
+  }, [geometry])
 
   useLayoutEffect(() => {
     restPose(world, poses)
   }, [world, poses])
 
   useFrame(() => {
-    const { playback, phase, finishPlayback } = useGameStore.getState()
+    const phase = useGameStore.getState().phase
+    const pb = getPlayback()
 
-    if (phase === 'animating' && playback) {
-      const t = (performance.now() - playback.startedAt) / 1000
-      const done = poseAt(playback.frames, t, poses)
-      if (done) finishPlayback()
+    if (phase === 'animating' && pb.active && pb.frames.length > 0) {
+      poseFromFrames(pb.frames, pb.t, sides, poses)
     } else {
       restPose(world, poses)
     }
 
     const mesh = meshRef.current
     if (mesh) {
+      const s = PHYSICS.asykRadius * VISUAL_SCALE
       asyks.forEach((b, i) => {
         const p = poses.get(b.id)
         if (!p) return
-        dummy.position.set(p.x, p.z, toSceneZ(p.y))
-        // асық лежит плашмя: крутим только вокруг вертикали, иначе он «встаёт на ребро»
-        dummy.rotation.set(0, p.angle, 0)
-        dummy.scale.setScalar(p.visible ? 1 : 0)
+        const base = (lift[p.side] ?? lift[2]!) * s
+        dummy.position.set(p.x, p.z + base, toSceneZ(p.y))
+        // сторона падения — поворот вокруг длинной оси, рыскание — вокруг вертикали
+        dummy.rotation.set((p.side * Math.PI) / 2, p.angle, 0, 'YXZ')
+        dummy.scale.setScalar(p.visible ? s : 0)
         dummy.updateMatrix()
         mesh.setMatrixAt(i, dummy.matrix)
       })
@@ -110,32 +118,50 @@ export function Bodies({ world }: { world: WorldState }) {
     const saka = sakaRef.current
     const sp = poses.get(0)
     if (saka && sp) {
-      saka.position.set(sp.x, sp.z, toSceneZ(sp.y))
-      saka.rotation.set(0, sp.angle, 0)
+      const s = PHYSICS.sakaRadius * VISUAL_SCALE
+      saka.position.set(sp.x, sp.z + lift[2]! * s, toSceneZ(sp.y))
+      saka.rotation.set(0, sp.angle, sp.z * 3.2, 'YXZ')
+      saka.scale.setScalar(s)
       saka.visible = sp.visible
+    }
+
+    // тень-пятно под сақа: сжимается и светлеет, когда сақа в воздухе
+    const blob = shadowRef.current
+    if (blob && sp) {
+      const k = Math.max(0, 1 - sp.z * 1.7)
+      blob.position.set(sp.x, 0.004, toSceneZ(sp.y))
+      blob.scale.setScalar(Math.max(0.35, k))
+      const mat = blob.material as THREE.MeshBasicMaterial
+      mat.opacity = sp.visible ? 0.3 * k : 0
     }
   })
 
   return (
     <group>
       <instancedMesh
-        key={asyks.length}
+        key={`${asyks.length}-${geometry.uuid}`}
         ref={meshRef}
-        args={[asykGeo, undefined, Math.max(asyks.length, 1)]}
+        args={[geometry, undefined, Math.max(asyks.length, 1)]}
         castShadow
         receiveShadow
+        frustumCulled={false}
       >
-        <meshStandardMaterial color={ASYK_COLOR} roughness={0.72} metalness={0.02} />
+        <meshStandardMaterial color={ASYK_COLOR} roughness={0.66} metalness={0.04} />
       </instancedMesh>
 
-      <mesh ref={sakaRef} geometry={sakaGeo} castShadow receiveShadow>
+      <mesh ref={sakaRef} geometry={geometry} castShadow receiveShadow frustumCulled={false}>
         <meshStandardMaterial
           color={SAKA_COLOR}
-          roughness={0.45}
-          metalness={0.15}
+          roughness={0.34}
+          metalness={0.3}
           emissive={SAKA_COLOR}
-          emissiveIntensity={0.16}
+          emissiveIntensity={0.12}
         />
+      </mesh>
+
+      <mesh ref={shadowRef} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[PHYSICS.sakaRadius * 1.5, 20]} />
+        <meshBasicMaterial color="#2b1d0c" transparent opacity={0.3} depthWrite={false} />
       </mesh>
     </group>
   )
