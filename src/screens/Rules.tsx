@@ -4,7 +4,13 @@ import type { DictKey } from '@/i18n'
 import { Ornament } from '@/components/Ornament'
 
 const BASE: DictKey[] = ['rules.1', 'rules.2', 'rules.3', 'rules.4', 'rules.5', 'rules.6', 'rules.7']
-const EXTRA: DictKey[] = ['rules.extra.combo', 'rules.extra.physics', 'rules.extra.next']
+const CONTROL: DictKey[] = ['rules.control.1', 'rules.control.2', 'rules.control.3']
+const EXTRA: DictKey[] = [
+  'rules.extra.combo',
+  'rules.extra.tura',
+  'rules.extra.physics',
+  'rules.extra.next',
+]
 
 export function Rules() {
   const t = useT()
@@ -39,6 +45,20 @@ export function Rules() {
             </li>
           ))}
         </ol>
+
+        <h2 className="mt-8 text-xs font-bold uppercase tracking-widest text-gold-400">
+          {t('rules.control')}
+        </h2>
+        <ul className="mt-3 flex flex-col gap-2">
+          {CONTROL.map((k, i) => (
+            <li key={k} className="flex gap-3 text-sm leading-relaxed text-steppe-100">
+              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-550/30 text-xs font-bold text-sky-450">
+                {i + 1}
+              </span>
+              <span>{t(k)}</span>
+            </li>
+          ))}
+        </ul>
 
         <h2 className="mt-8 text-xs font-bold uppercase tracking-widest text-sky-450">
           {t('rules.extra')}

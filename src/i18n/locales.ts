@@ -358,14 +358,35 @@ export const dict = {
     en: 'Turn order is decided by a toss: alshy > tayki > buk > shik.',
   },
   'rules.extra.combo': {
-    kk: 'Бір лақтыруда 2 асық — «Қос!», 3 және одан көп — «Керемет!».',
-    ru: 'Комбо: 2 асыка одним броском — «Қос!», 3+ — «Керемет!».',
-    en: 'Combos: two in one throw is «Qos!», three or more is «Keremet!».',
+    kk: 'Комбо төрт сатылы: Жақсы! / Қос! / Керемет! / Ғажап!',
+    ru: 'Комбо в четыре ступени: Жақсы! / Қос! / Керемет! / Ғажап!',
+    en: 'Combos in four tiers: Zhaqsy! / Qos! / Keremet! / Ghazhap!',
   },
   'rules.extra.physics': {
     kk: 'Лақтыру тек бағыт пен күшке тәуелді: физика детерминирленген.',
     ru: 'Бросок зависит только от направления и силы: физика детерминирована.',
     en: 'A throw depends only on direction and power: the physics is deterministic.',
+  },
+  'rules.control': { kk: 'Басқару', ru: 'Управление', en: 'Controls' },
+  'rules.control.1': {
+    kk: 'Бүйірге сырғыт — лақтыру бағыты. Камера соңынан бұрылады.',
+    ru: 'Свайп вбок — направление броска. Камера поворачивается следом.',
+    en: 'Swipe sideways to set the direction. The camera follows.',
+  },
+  'rules.control.2': {
+    kk: 'Төмен тарт: ұзындығы — күш, көлбеуі — көтерілу бұрышы (0°–60°).',
+    ru: 'Тяни вниз: длина — сила, наклон тяги — угол подъёма (0°–60°).',
+    en: 'Drag down: length is power, slope is the launch angle (0°–60°).',
+  },
+  'rules.control.3': {
+    kk: 'Жерлеп лақтырсаң — сырғиды әрі қатты соғады. Биік лақтырсаң — кедергіден асады.',
+    ru: 'Настильный бросок скользит и бьёт сильнее. Высокий перелетает преграды.',
+    en: 'A flat throw slides and hits harder. A high throw clears obstacles.',
+  },
+  'rules.extra.tura': {
+    kk: '«Тура!» — ауадағы асыққа тигізу. Ауладағы ең жоғары шеберлік.',
+    ru: '«Тура!» — попадание по асыку, пока он в воздухе. Высший класс во дворе.',
+    en: '«Tura!» — hitting an asyq while it is still airborne. The finest shot in the yard.',
   },
   'rules.extra.next': {
     kk: 'Алда: күнделікті сынақ, университеттер лигасы, деңгей редакторы.',
