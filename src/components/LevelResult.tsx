@@ -3,7 +3,8 @@ import { dominantHint, type HintKey } from '@/game/rules'
 import type { MatchState } from '@/game/rules'
 import { nextLevel, type CampaignLevel } from '@/levels'
 import { useT } from '@/i18n'
-import { isUnlocked, loadProgress } from '@/lib/progress'
+import { isUnlocked } from '@/lib/progress'
+import { useProgressStore } from '@/store/useProgressStore'
 import { useGameStore } from '@/store/useGameStore'
 import { Ornament } from './Ornament'
 import { Stars } from './Stars'
@@ -24,7 +25,7 @@ export function LevelResult({ match, level }: { match: MatchState; level: Campai
   const hint: HintKey | null = won ? null : dominantHint(hints)
 
   const after = nextLevel(level.id)
-  const canGoNext = won && after && isUnlocked(after.id, loadProgress())
+  const canGoNext = won && after && isUnlocked(after.id, useProgressStore.getState().progress)
 
   return (
     <div className="absolute inset-0 z-20 flex items-center justify-center bg-night-900/88 p-4 backdrop-blur-sm">

@@ -8,7 +8,8 @@ import { upgradeWithEmail, upgradeWithGoogle } from '@/net/auth'
 import { fetchHistory, fetchPersonalBests, type PersonalBests } from '@/net/sync'
 import type { ResultRow } from '@/net/types'
 import { useAuthStore } from '@/store/useAuthStore'
-import { loadProgress, totalStars } from '@/lib/progress'
+import { totalStars } from '@/lib/progress'
+import { useProgressStore } from '@/store/useProgressStore'
 import { CAMPAIGN } from '@/levels'
 import { percent } from '@/lib/format'
 
@@ -48,8 +49,9 @@ export function Profile() {
   }, [profile])
 
   // без облака рекорды всё равно есть — берём их из локального прогресса
-  const localStars = useMemo(() => totalStars(loadProgress()), [])
-  const localLevels = useMemo(() => Object.keys(loadProgress()).length, [])
+  const progress = useProgressStore((s) => s.progress)
+  const localStars = useMemo(() => totalStars(progress), [progress])
+  const localLevels = useMemo(() => Object.keys(progress).length, [progress])
 
   const onSave = async () => {
     const ok = await save({

@@ -19,7 +19,7 @@ import { saveDaily, saveLocalDaily } from '@/net/daily'
 import { beginPlayback, stopPlayback } from '@/game/playback'
 import { freshSeed } from '@/lib/format'
 import { saveBest } from '@/lib/storage'
-import { saveLevelResult } from '@/lib/progress'
+import { useProgressStore } from '@/store/useProgressStore'
 import { translate, useI18n } from '@/i18n'
 import type { DictKey } from '@/i18n'
 import { fullEffects } from '@/store/useSettings'
@@ -206,7 +206,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       if (objectiveDone(pending)) {
         const stars = starsFor(player.throwsUsed, session.level.stars)
         levelStars = stars
-        newRecord = saveLevelResult(session.level.id, stars, player.throwsUsed)
+        newRecord = useProgressStore.getState().record(session.level.id, stars, player.throwsUsed)
       }
     }
 

@@ -7,7 +7,8 @@ import { LevelResult } from '@/components/LevelResult'
 import { PowerBar } from '@/components/PowerBar'
 import { Stars } from '@/components/Stars'
 import { useI18n, useT } from '@/i18n'
-import { isUnlocked, loadProgress } from '@/lib/progress'
+import { isUnlocked } from '@/lib/progress'
+import { useProgressStore } from '@/store/useProgressStore'
 import { usePopupStore } from '@/game/fx/popupStore'
 import { useGameStore } from '@/store/useGameStore'
 
@@ -22,7 +23,8 @@ export function LevelPlay() {
   const startLevel = useGameStore((s) => s.startLevel)
   const leave = useGameStore((s) => s.leave)
 
-  const allowed = level ? isUnlocked(level.id, loadProgress()) : false
+  const progressMap = useProgressStore((s) => s.progress)
+  const allowed = level ? isUnlocked(level.id, progressMap) : false
 
   useEffect(() => {
     if (!level || !allowed) return
@@ -46,7 +48,7 @@ export function LevelPlay() {
   const player = match.players[0]!
   const knocked = knockedOutCount(match.world)
   const left = level.throws - player.throwsUsed
-  const progress = loadProgress()[level.id]
+  const progress = progressMap[level.id]
 
   return (
     <GameView match={match}>

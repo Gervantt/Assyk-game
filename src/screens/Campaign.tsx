@@ -3,12 +3,13 @@ import { CHAPTERS, CAMPAIGN } from '@/levels'
 import { useI18n, useT } from '@/i18n'
 import { Ornament } from '@/components/Ornament'
 import { Stars } from '@/components/Stars'
-import { isUnlocked, loadProgress, nextUnfinished, totalStars } from '@/lib/progress'
+import { isUnlocked, nextUnfinished, totalStars } from '@/lib/progress'
+import { useProgressStore } from '@/store/useProgressStore'
 
 export function Campaign() {
   const t = useT()
   const locale = useI18n((s) => s.locale)
-  const progress = loadProgress()
+  const progress = useProgressStore((s) => s.progress)
   const resume = nextUnfinished(progress)
 
   return (

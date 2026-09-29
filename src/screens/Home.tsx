@@ -3,7 +3,8 @@ import { useT } from '@/i18n'
 import { LocaleSwitch } from '@/components/LocaleSwitch'
 import { Ornament } from '@/components/Ornament'
 import { loadBest } from '@/lib/storage'
-import { loadProgress, nextUnfinished, totalStars, tutorialDone } from '@/lib/progress'
+import { nextUnfinished, totalStars, tutorialDone } from '@/lib/progress'
+import { useProgressStore } from '@/store/useProgressStore'
 import { CAMPAIGN } from '@/levels'
 import { Stars } from '@/components/Stars'
 import { BackendBanner } from '@/components/BackendBanner'
@@ -36,7 +37,7 @@ function ModeCard({ to, title, desc, primary = false }: {
 export function Home() {
   const t = useT()
   const best = loadBest('training')
-  const progress = loadProgress()
+  const progress = useProgressStore((s) => s.progress)
   const stars = totalStars(progress)
   const fresh = !tutorialDone() && stars === 0
 

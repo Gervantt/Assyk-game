@@ -5,6 +5,7 @@ import { syncProgress } from '@/net/sync'
 import { disableBackend, supabase } from '@/net/supabase'
 import type { BackendStatus, Profile, University } from '@/net/types'
 import { useI18n } from '@/i18n'
+import { useProgressStore } from '@/store/useProgressStore'
 
 interface AuthStore {
   status: BackendStatus
@@ -73,6 +74,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ status: 'ready', userId, profile, syncing: true })
 
     const [universities] = await Promise.all([fetchUniversities(), syncProgress(userId)])
+    // прогресс из облака уже слит с локальным — показываем его немедленно
+    useProgressStore.getState().reload()
     set({ universities, syncing: false })
   },
 
