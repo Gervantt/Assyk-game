@@ -23,7 +23,7 @@ export function Confetti({ active }: { active: boolean }) {
   const effects = useSettings((s) => s.effects)
 
   useEffect(() => {
-    if (!active || effects === 'reduced') return
+    if (!active || effects === 'low') return
     const canvas = ref.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
@@ -85,6 +85,6 @@ export function Confetti({ active }: { active: boolean }) {
     return () => cancelAnimationFrame(raf)
   }, [active, effects])
 
-  if (!active || effects === 'reduced') return null
+  if (!active || effects === 'low') return null
   return <canvas ref={ref} className="pointer-events-none absolute inset-0 z-30 h-full w-full" />
 }

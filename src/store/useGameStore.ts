@@ -16,13 +16,13 @@ import { knockedOutCount } from '@/game/rules'
 import { activeUserId } from '@/store/useAuthStore'
 import { pushProgress, recordResult } from '@/net/sync'
 import { saveDaily, saveLocalDaily } from '@/net/daily'
-import { beginPlayback, stopPlayback } from '@/game/playback'
+import { beginPlayback, buildPlan, stopPlayback } from '@/game/playback'
 import { freshSeed } from '@/lib/format'
 import { saveBest } from '@/lib/storage'
 import { useProgressStore } from '@/store/useProgressStore'
 import { translate, useI18n } from '@/i18n'
 import type { DictKey } from '@/i18n'
-import { fullEffects } from '@/store/useSettings'
+import { reducedMotion, richEffects } from '@/store/useSettings'
 import { playSound, unlockAudio } from '@/audio'
 import { HAPTIC, vibrate } from '@/lib/haptics'
 import { resetShake } from '@/game/fx/shake'
@@ -162,7 +162,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     unlockAudio()
     const { match: next, summary, sim } = applyThrow(match, input)
 
-    beginPlayback(sim.frames, sim.events, fullEffects())
+    beginPlayback(sim.frames, sim.events, buildPlan(sim.events, richEffects(), reducedMotion()))
     playSound('whoosh', { volume: 0.5 })
 
     set({ pending: next, phase: 'animating', lastSummary: summary, toasts: [] })

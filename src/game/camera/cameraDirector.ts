@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { PHYSICS } from '@/physics'
-import { currentFrameIndex, getPlayback } from '@/game/playback'
+import { currentFrameIndex, getPlayback, playbackImpact, playbackPlan } from '@/game/playback'
+import { fullEffects } from '@/store/useSettings'
 import { toSceneZ } from '@/game/scene/coords'
 import { useAimStore } from '@/store/useAimStore'
 import { useGameStore } from '@/store/useGameStore'
@@ -111,6 +112,16 @@ export function frameCamera(
   // камера отходит и поднимается, когда сақа высоко
   let distance = shot.distance
   let height = shot.height
+
+  // момент удара: наезд к точке столкновения
+  if (playbackImpact() && fullEffects()) {
+    const plan = playbackPlan()
+    wantTarget.x += (plan.focusX - wantTarget.x) * 0.65
+    wantTarget.z += (toSceneZ(plan.focusY) - wantTarget.z) * 0.65
+    wantTarget.y = 0.35
+    distance *= 0.6
+    height *= 0.72
+  }
   if (next === 'flight') {
     const pb = getPlayback()
     const saka = pb.frames[currentFrameIndex()]?.bodies[0]

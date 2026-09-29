@@ -105,19 +105,25 @@ export function Settings() {
 
         <Section title={t('settings.effects')}>
           <div className="flex gap-2">
-            {(['full', 'reduced'] as const).map((level) => (
+            {(
+              [
+                ['full', 'settings.effects.full'],
+                ['medium', 'settings.effects.medium'],
+                ['low', 'settings.effects.low'],
+              ] as const
+            ).map(([level, key]) => (
               <button
                 key={level}
                 type="button"
                 onClick={() => setEffects(level)}
                 aria-pressed={s.effects === level}
-                className={`min-h-[44px] flex-1 rounded-xl px-3 text-sm font-bold transition-colors ${
+                className={`min-h-[44px] flex-1 rounded-xl px-2 text-xs font-bold transition-colors sm:text-sm ${
                   s.effects === level
                     ? 'bg-gold-400 text-night-900'
                     : 'bg-white/10 text-steppe-100 ring-1 ring-white/15'
                 }`}
               >
-                {t(level === 'full' ? 'settings.effects.full' : 'settings.effects.reduced')}
+                {t(key)}
               </button>
             ))}
           </div>

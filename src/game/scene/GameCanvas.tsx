@@ -11,6 +11,7 @@ import { SteppeEnvironment } from './SteppeEnvironment'
 import { Particles } from '@/game/fx/Particles'
 import { Trail } from '@/game/fx/Trail'
 import { Decals } from '@/game/fx/Decals'
+import { Shockwave } from '@/game/fx/Shockwave'
 import { PopupEmitter } from '@/game/fx/Popups'
 import { useSettings } from '@/store/useSettings'
 
@@ -25,13 +26,15 @@ export function GameCanvas({
   /** сколько траектории показывать: полную с кольцом, треть или только начало */
   preview?: PreviewMode
 }) {
-  const rich = useSettings((s) => s.effects) === 'full'
+  const level = useSettings((s) => s.effects)
+  const rich = level !== 'low'
+  const full = level === 'full'
 
   return (
     <Canvas
       shadows
       // на уменьшенных эффектах экономим главное — число пикселей
-      dpr={rich ? [1, 2] : [1, 1.5]}
+      dpr={full ? [1, 2] : rich ? [1, 1.75] : [1, 1.5]}
       gl={{ antialias: true, powerPreference: 'high-performance' }}
       onCreated={({ gl }) => {
         gl.toneMappingExposure = 0.86
@@ -43,7 +46,7 @@ export function GameCanvas({
       camera={{ fov: 42, near: 0.1, far: 60, position: [0, 6.4, 5.5] }}
     >
       {/* двигает часы броска и рассылает события — должен идти первым */}
-      <PlaybackDriver />
+      <PlaybackDriver world={world} />
 
       <fog attach="fog" args={['#c7b48d', 16, 34]} />
 
@@ -52,9 +55,9 @@ export function GameCanvas({
       <directionalLight
         position={[4.6, 3.9, 3.1]}
         color="#fff1d4"
-        intensity={rich ? 2.0 : 2.2}
+        intensity={full ? 2.0 : 2.2}
         castShadow={rich}
-        shadow-mapSize={rich ? [2048, 2048] : [1024, 1024]}
+        shadow-mapSize={full ? [2048, 2048] : [1024, 1024]}
         shadow-camera-left={-5}
         shadow-camera-right={5}
         shadow-camera-top={5}
@@ -76,6 +79,7 @@ export function GameCanvas({
             <Particles />
             <Trail />
             <Decals />
+            <Shockwave />
           </>
         )}
         <PopupEmitter />

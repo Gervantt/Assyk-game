@@ -1,5 +1,16 @@
-/** Три звезды: заполненные — заработанные. */
-export function Stars({ value, size = 18 }: { value: 0 | 1 | 2 | 3; size?: number }) {
+/**
+ * Три звезды: заполненные — заработанные.
+ * staged — звёзды вылетают по одной, а не появляются разом.
+ */
+export function Stars({
+  value,
+  size = 18,
+  staged = false,
+}: {
+  value: 0 | 1 | 2 | 3
+  size?: number
+  staged?: boolean
+}) {
   return (
     <span className="inline-flex gap-0.5" aria-label={`${value} / 3`}>
       {[1, 2, 3].map((i) => (
@@ -9,7 +20,10 @@ export function Stars({ value, size = 18 }: { value: 0 | 1 | 2 | 3; size?: numbe
           height={size}
           viewBox="0 0 24 24"
           aria-hidden
-          className={i <= value ? 'text-gold-400' : 'text-white/15'}
+          style={staged && i <= value ? { animationDelay: `${(i - 1) * 260}ms` } : undefined}
+          className={`${i <= value ? 'text-gold-400' : 'text-white/15'} ${
+            staged && i <= value ? 'animate-star' : ''
+          }`}
         >
           <path
             fill="currentColor"

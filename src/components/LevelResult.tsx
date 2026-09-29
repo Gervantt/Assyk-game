@@ -8,6 +8,7 @@ import { useProgressStore } from '@/store/useProgressStore'
 import { useGameStore } from '@/store/useGameStore'
 import { Ornament } from './Ornament'
 import { Stars } from './Stars'
+import { CountUp } from './CountUp'
 
 /** Итоги уровня кампании: звёзды или совет, что поправить. */
 export function LevelResult({ match, level }: { match: MatchState; level: CampaignLevel }) {
@@ -37,7 +38,7 @@ export function LevelResult({ match, level }: { match: MatchState; level: Campai
 
         {won && (
           <div className="mt-4 flex flex-col items-center gap-2">
-            <Stars value={stars} size={34} />
+            <Stars value={stars} size={34} staged />
             {newRecord && (
               <span className="text-xs font-bold uppercase tracking-widest text-gold-400">
                 {t('level.record')}
@@ -52,7 +53,7 @@ export function LevelResult({ match, level }: { match: MatchState; level: Campai
               {t('level.knocked')}
             </div>
             <div className="text-xl font-bold text-steppe-50">
-              {knocked} / {level.goal}
+              <CountUp value={knocked} /> / {level.goal}
             </div>
           </div>
           <div>
@@ -60,7 +61,7 @@ export function LevelResult({ match, level }: { match: MatchState; level: Campai
               {t('level.used')}
             </div>
             <div className="text-xl font-bold text-steppe-50">
-              {player.throwsUsed} / {level.throws}
+              <CountUp value={player.throwsUsed} delay={150} /> / {level.throws}
             </div>
           </div>
         </div>

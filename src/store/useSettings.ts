@@ -2,7 +2,7 @@ import { create } from 'zustand'
 
 const KEY = 'asyq.settings.v1'
 
-export type EffectsLevel = 'full' | 'reduced'
+export type EffectsLevel = 'full' | 'medium' | 'low'
 
 export interface Settings {
   sound: boolean
@@ -23,13 +23,21 @@ function load(): Settings {
   const fallback: Settings = {
     sound: true,
     volume: 0.7,
-    effects: prefersReducedMotion() ? 'reduced' : 'full',
+    effects: prefersReducedMotion() ? 'low' : 'full',
     haptics: true,
   }
   try {
     const raw = localStorage.getItem(KEY)
     if (!raw) return fallback
-    return { ...fallback, ...(JSON.parse(raw) as Partial<Settings>) }
+    const saved = JSON.parse(raw) as Partial<Settings> & { effects?: string }
+    // раньше уровней было два; 'reduced' переносим в 'low'
+    const effects: EffectsLevel =
+      saved.effects === 'full' || saved.effects === 'medium' || saved.effects === 'low'
+        ? saved.effects
+        : saved.effects === 'reduced'
+          ? 'low'
+          : fallback.effects
+    return { ...fallback, ...saved, effects }
   } catch {
     return fallback
   }
@@ -62,7 +70,25 @@ export function settings(): Settings {
   return { sound: s.sound, volume: s.volume, effects: s.effects, haptics: s.haptics }
 }
 
-/** Полные эффекты включены? Учитывает и настройку, и prefers-reduced-motion. */
+export function effectsLevel(): EffectsLevel {
+  return useSettings.getState().effects
+}
+
+/** Нужны ли «дорогие» эффекты: частицы, слоу-мо, конфетти. */
+export function richEffects(): boolean {
+  return useSettings.getState().effects !== 'low'
+}
+
+/** Полные эффекты: тряска, наезд камеры, ударные волны. */
 export function fullEffects(): boolean {
   return useSettings.getState().effects === 'full'
+}
+
+/** Системная настройка «меньше движения» — уважаем её всегда. */
+export function reducedMotion(): boolean {
+  try {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  } catch {
+    return false
+  }
 }

@@ -75,6 +75,9 @@ export function Particles() {
         spawn(6 + Math.round(e.power * 10), e.x, e.y, 1.5 + e.power * 2.6, 1.1 + e.power, 0.42, 0.028, [1, 0.88, 0.56])
       } else if (e.t === 'dust') {
         spawn(8 + Math.round(e.power * 12), e.x, e.y, 0.5 + e.power * 1.1, 0.5, 0.75, 0.05, [0.83, 0.71, 0.5])
+      } else if (e.t === 'chalk') {
+        // выброс мела в точке пересечения линии кона
+        spawn(14, e.x, e.y, 1.1, 1.3, 0.6, 0.032, [0.97, 0.96, 0.92])
       }
     })
   }, [pool, rnd])

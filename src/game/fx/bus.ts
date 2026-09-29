@@ -4,7 +4,9 @@ export type FxEvent =
   | { t: 'dust'; x: number; y: number; power: number }
   | { t: 'knock'; x: number; y: number; index: number }
   | { t: 'decal'; x: number; y: number; size: number }
-  | { t: 'combo'; kind: 'qos' | 'keremet' }
+  | { t: 'shockwave'; x: number; y: number; power: number }
+  | { t: 'chalk'; x: number; y: number }
+  | { t: 'coin'; x: number; y: number }
 
 type Listener = (e: FxEvent) => void
 

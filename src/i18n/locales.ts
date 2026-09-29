@@ -241,11 +241,12 @@ export const dict = {
   'settings.volume': { kk: 'Дыбыс деңгейі', ru: 'Громкость', en: 'Volume' },
   'settings.effects': { kk: 'Эффекттер', ru: 'Эффекты', en: 'Effects' },
   'settings.effects.full': { kk: 'Толық', ru: 'Полные', en: 'Full' },
-  'settings.effects.reduced': { kk: 'Азайтылған', ru: 'Уменьшенные', en: 'Reduced' },
+  'settings.effects.medium': { kk: 'Орташа', ru: 'Умеренные', en: 'Moderate' },
+  'settings.effects.low': { kk: 'Ең азы', ru: 'Минимум', en: 'Minimum' },
   'settings.effects.hint': {
-    kk: 'Бөлшектер, баяу түсіру, дірілдеу және конфетти сөнеді. Әлсіз құрылғыларға ыңғайлы.',
-    ru: 'Отключает частицы, слоу-мо, тряску и конфетти. Пригодится на слабых устройствах.',
-    en: 'Turns off particles, slow-motion, shake and confetti. Useful on weaker devices.',
+    kk: 'Толық — бәрі. Орташа — дірілдеу мен камера наезді жоқ. Ең азы — бөлшектер де, баяу түсіру де жоқ: әлсіз құрылғыларға.',
+    ru: 'Полные — всё. Умеренные — без тряски и наезда камеры. Минимум — без частиц и слоу-мо, для слабых устройств.',
+    en: 'Full — everything. Moderate — no shake or camera push-in. Minimum — no particles or slow-motion, for weaker devices.',
   },
   'settings.haptics': { kk: 'Діріл', ru: 'Вибрация', en: 'Vibration' },
   'settings.haptics.hint': {
@@ -286,7 +287,11 @@ export const dict = {
   'aim.cancel': { kk: 'Болдырмау үшін саусақты ортаға қайтар', ru: 'Верни палец в центр — бросок отменится', en: 'Return to centre to cancel' },
 
   'event.knock': { kk: 'Ұтып алдың!', ru: 'Выбил!', en: 'Knocked out!' },
+  'event.zhaksy': { kk: 'Жақсы!', ru: 'Жақсы!', en: 'Zhaqsy!' },
   'event.qos': { kk: 'Қос!', ru: 'Қос!', en: 'Қos!' },
+  'event.gazhap': { kk: 'Ғажап!', ru: 'Ғажап!', en: 'Ghazhap!' },
+  'event.tura': { kk: 'Тура!', ru: 'Тура!', en: 'Tura!' },
+  'event.nearMiss': { kk: 'Ууу, тиер еді!', ru: 'Ууу, чуть не задел!', en: 'Ooh, so close!' },
   'event.keremet': { kk: 'Керемет!', ru: 'Керемет!', en: 'Keremet!' },
   'event.miss': { kk: 'Тиген жоқ', ru: 'Мимо', en: 'Miss' },
   'event.penalty': { kk: 'Сақа қонда қалды: −1', ru: 'Сақа осталась в кону: −1', en: 'Saqa stopped inside: −1' },

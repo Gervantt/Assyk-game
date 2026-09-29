@@ -117,3 +117,64 @@
     animation-duration: 0.01ms;
   }
 }
+
+@layer utilities {
+  .animate-coin {
+    animation: coin-fly 0.85s cubic-bezier(0.4, 0, 0.3, 1) forwards;
+  }
+}
+
+/* Выбитый асық улетает дугой в копилку игрока в HUD. */
+@keyframes coin-fly {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.25);
+  }
+  55% {
+    transform: translate(calc(-50% + var(--coin-dx) * 0.55), calc(-50% + var(--coin-dy) * 0.35))
+      scale(1.05) rotate(180deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--coin-dx)), calc(-50% + var(--coin-dy))) scale(0.45)
+      rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-coin {
+    animation-duration: 0.01ms;
+  }
+}
+
+@layer utilities {
+  .animate-star {
+    animation: star-pop 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+}
+
+/* Звёзды вылетают по одной, а не появляются разом. */
+@keyframes star-pop {
+  0% {
+    opacity: 0;
+    transform: scale(2.2) rotate(-25deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(0.92) rotate(6deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-star {
+    animation-duration: 0.01ms;
+  }
+}
