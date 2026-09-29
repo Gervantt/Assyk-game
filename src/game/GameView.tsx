@@ -1,17 +1,28 @@
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import type { AimState } from '@/physics'
 import type { MatchState } from '@/game/rules'
 import { GameCanvas } from '@/game/scene/GameCanvas'
+import type { PreviewMode } from '@/game/scene/AimIndicator'
 import { AimLayer } from '@/game/AimLayer'
 import { Popups } from '@/game/fx/Popups'
 import { Toasts } from '@/components/Toasts'
 import { Confetti } from '@/components/Confetti'
+import { resetCamera } from '@/game/camera/cameraDirector'
 import { useGameStore } from '@/store/useGameStore'
+
+/** Сколько траектории показывать: в обучении всю, в рейтинге почти ничего. */
+const PREVIEW_BY_MODE: Record<string, PreviewMode> = {
+  tutorial: 'full',
+  training: 'medium',
+  campaign: 'medium',
+  hotseat: 'medium',
+  daily: 'short',
+}
 
 export interface GameViewProps {
   match: MatchState
-  /** доля траектории в пунктире прицела: в обучении длиннее */
-  hintLength?: number
+  /** обучение может зафиксировать угол подъёма кнопкой-пресетом */
+  elevationLock?: number | null
   /** обучение может не пропустить бросок */
   gate?: (aim: AimState) => boolean
   /** свой HUD поверх сцены */
@@ -19,15 +30,25 @@ export interface GameViewProps {
 }
 
 /** Общая игровая поверхность: сцена, управление, эффекты. */
-export function GameView({ match, hintLength, gate, children }: GameViewProps) {
+export function GameView({ match, elevationLock, gate, children }: GameViewProps) {
   const phase = useGameStore((s) => s.phase)
   const celebrate = useGameStore((s) => s.celebrate)
   const maxPower = useGameStore((s) => s.session?.maxPower ?? 1)
 
+  useEffect(() => {
+    resetCamera()
+  }, [match.mode])
+
   return (
     <div className="relative h-full w-full overflow-hidden bg-night-900">
-      <GameCanvas world={match.world} hintLength={hintLength} />
-      <AimLayer world={match.world} enabled={phase === 'aim'} maxPower={maxPower} gate={gate} />
+      <GameCanvas world={match.world} preview={PREVIEW_BY_MODE[match.mode] ?? 'medium'} />
+      <AimLayer
+        world={match.world}
+        enabled={phase === 'aim'}
+        maxPower={maxPower}
+        elevationLock={elevationLock}
+        gate={gate}
+      />
       {children}
       <Popups />
       <Toasts />

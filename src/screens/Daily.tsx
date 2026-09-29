@@ -4,6 +4,7 @@ import { knockedOutCount } from '@/game/rules'
 import { dailyLevel, todayISO } from '@/levels/daily'
 import { GameView } from '@/game/GameView'
 import { PowerBar } from '@/components/PowerBar'
+import { CameraToggle } from '@/components/CameraToggle'
 import { Ornament } from '@/components/Ornament'
 import { BackendBanner } from '@/components/BackendBanner'
 import { AVATAR_EMOJI } from '@/net/profile'
@@ -96,6 +97,7 @@ export function Daily() {
             </div>
           </div>
         </div>
+        <CameraToggle className="absolute bottom-24 right-3" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center p-3 pb-5">
           <PowerBar />
         </div>

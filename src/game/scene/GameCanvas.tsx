@@ -5,7 +5,7 @@ import { Bodies } from './Bodies'
 import { CameraRig } from './CameraRig'
 import { FieldMarks } from './FieldMarks'
 import { Ground } from './Ground'
-import { AimIndicator } from './AimIndicator'
+import { AimIndicator, type PreviewMode } from './AimIndicator'
 import { PlaybackDriver } from './PlaybackDriver'
 import { SteppeEnvironment } from './SteppeEnvironment'
 import { Particles } from '@/game/fx/Particles'
@@ -18,12 +18,12 @@ import { useSettings } from '@/store/useSettings'
 export function GameCanvas({
   world,
   children,
-  hintLength,
+  preview = 'short',
 }: {
   world: WorldState
   children?: ReactNode
-  /** доля реальной траектории в пунктире прицела; в обучении длиннее */
-  hintLength?: number
+  /** сколько траектории показывать: полную с кольцом, треть или только начало */
+  preview?: PreviewMode
 }) {
   const rich = useSettings((s) => s.effects) === 'full'
 
@@ -45,8 +45,7 @@ export function GameCanvas({
       {/* двигает часы броска и рассылает события — должен идти первым */}
       <PlaybackDriver />
 
-      <color attach="background" args={['#0d1017']} />
-      <fog attach="fog" args={['#0d1017', 9, 17]} />
+      <fog attach="fog" args={['#c7b48d', 16, 34]} />
 
       <hemisphereLight args={['#bcd4ea', '#2e2212', 0.22]} />
       {/* солнце низко: при высоком солнце тень короче самого асыка и не видна */}
@@ -71,7 +70,7 @@ export function GameCanvas({
         <Ground />
         <FieldMarks field={world.field} throwLineY={world.throwLineY} />
         <Bodies world={world} />
-        <AimIndicator hintLength={hintLength} />
+        <AimIndicator world={world} preview={preview} />
         {rich && (
           <>
             <Particles />
@@ -82,7 +81,7 @@ export function GameCanvas({
         <PopupEmitter />
         {children}
       </Suspense>
-      <CameraRig />
+      <CameraRig throwLineY={world.throwLineY} fieldRadius={world.field.radius} />
     </Canvas>
   )
 }

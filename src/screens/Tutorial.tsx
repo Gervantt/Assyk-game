@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import type { AimState } from '@/physics'
 import { GameView } from '@/game/GameView'
 import { PowerBar } from '@/components/PowerBar'
+import { CameraToggle } from '@/components/CameraToggle'
 import { Ornament } from '@/components/Ornament'
 import { useT } from '@/i18n'
 import type { DictKey } from '@/i18n'
@@ -14,6 +15,12 @@ type Step = 1 | 2 | 3 | 'done'
 
 /** Зона силы, которую нужно поймать на втором шаге. */
 const POWER_ZONE: [number, number] = [0.45, 0.85]
+/** Готовые углы подъёма: новичку остаётся думать только о силе. */
+const PRESETS: Array<{ key: 'tut.preset.low' | 'tut.preset.mid' | 'tut.preset.high'; deg: number }> = [
+  { key: 'tut.preset.low', deg: 5 },
+  { key: 'tut.preset.mid', deg: 25 },
+  { key: 'tut.preset.high', deg: 50 },
+]
 /** Запас по промаху мимо кона на первом шаге. */
 const AIM_SLACK = 0.4
 
@@ -32,6 +39,7 @@ export function Tutorial() {
   const navigate = useNavigate()
   const [step, setStep] = useState<Step>(1)
   const [nudge, setNudge] = useState(false)
+  const [preset, setPreset] = useState<number | null>(null)
 
   const match = useGameStore((s) => s.match)
   const phase = useGameStore((s) => s.phase)
@@ -108,7 +116,7 @@ export function Tutorial() {
   const stepText = step === 'done' ? null : STEP_TEXT[step]
 
   return (
-    <GameView match={match} hintLength={0.75} gate={gate}>
+    <GameView match={match} gate={gate} elevationLock={preset}>
       <div className="pointer-events-none absolute inset-x-0 top-0 p-3">
         <div className="mx-auto max-w-sm rounded-2xl bg-black/60 p-4 ring-1 ring-white/15 backdrop-blur-sm">
           {stepText && (
@@ -136,7 +144,32 @@ export function Tutorial() {
         </div>
       </div>
 
+      <CameraToggle className="absolute bottom-32 right-3" />
+
       <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 p-3 pb-5">
+        {step !== 'done' && (
+          <div className="pointer-events-auto flex gap-2">
+            {PRESETS.map((item) => {
+              const rad = (item.deg * Math.PI) / 180
+              const on = preset !== null && Math.abs(preset - rad) < 1e-6
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => setPreset(on ? null : rad)}
+                  aria-pressed={on}
+                  className={`min-h-[44px] rounded-full px-4 text-xs font-bold ring-1 transition-colors ${
+                    on
+                      ? 'bg-gold-400 text-night-900 ring-gold-400'
+                      : 'bg-black/50 text-steppe-50 ring-white/15'
+                  }`}
+                >
+                  {t(item.key)}
+                </button>
+              )
+            })}
+          </div>
+        )}
         <PowerBar zone={step === 2 ? POWER_ZONE : undefined} />
       </div>
 

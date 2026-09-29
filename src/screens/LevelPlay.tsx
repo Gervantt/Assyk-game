@@ -5,6 +5,7 @@ import { levelById } from '@/levels'
 import { GameView } from '@/game/GameView'
 import { LevelResult } from '@/components/LevelResult'
 import { PowerBar } from '@/components/PowerBar'
+import { CameraToggle } from '@/components/CameraToggle'
 import { Stars } from '@/components/Stars'
 import { useI18n, useT } from '@/i18n'
 import { isUnlocked } from '@/lib/progress'
@@ -91,6 +92,8 @@ export function LevelPlay() {
           )}
         </div>
       </div>
+
+      <CameraToggle className="absolute bottom-24 right-3" />
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 p-3 pb-5">
         <PowerBar />

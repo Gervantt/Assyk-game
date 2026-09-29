@@ -51,9 +51,12 @@ export function SteppeEnvironment() {
     const sky = buildSkyTexture()
     const target = pmrem.fromEquirectangular(sky)
     scene.environment = target.texture
+    // та же панорама фоном: иначе за краем земли видна чёрная пустота
+    scene.background = sky
 
     return () => {
       scene.environment = null
+      scene.background = null
       target.dispose()
       sky.dispose()
       pmrem.dispose()

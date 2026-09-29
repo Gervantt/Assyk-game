@@ -223,6 +223,16 @@ export const dict = {
   },
   'tut.done.go': { kk: 'Сынақтарға', ru: 'К испытаниям', en: 'To the challenges' },
 
+  'tut.preset.low': { kk: 'Жерлеп', ru: 'Настильно', en: 'Flat' },
+  'tut.preset.mid': { kk: 'Орташа', ru: 'Средне', en: 'Medium' },
+  'tut.preset.high': { kk: 'Биік', ru: 'Высоко', en: 'High' },
+  'tut.preset.free': { kk: 'Еркін', ru: 'Свободно', en: 'Free' },
+  'tut.preset.hint': {
+    kk: 'Бұрышты дайын түймемен таңда — тек күшке зейін қой',
+    ru: 'Выбери угол кнопкой — тогда останется только сила',
+    en: 'Pick an angle with a button — then only power is left to you',
+  },
+
   'hud.wind': { kk: 'Жел', ru: 'Ветер', en: 'Wind' },
   'hud.maxPower': { kk: 'Күш шектеулі', ru: 'Сила ограничена', en: 'Power capped' },
 
@@ -258,14 +268,20 @@ export const dict = {
   'hud.best': { kk: 'Рекорд', ru: 'Рекорд', en: 'Best' },
 
   'aim.hint': {
-    kk: 'Экранды басып тұрып, артқа тарт та жібер',
-    ru: 'Зажми и потяни назад, затем отпусти',
-    en: 'Press, drag back and release',
+    kk: 'Бағыт үшін бүйірге сырғыт, содан соң төмен тартып жібер',
+    ru: 'Свайп вбок — направление. Потяни вниз и отпусти — бросок',
+    en: 'Swipe sideways to aim, then drag down and release to throw',
   },
+  'aim.pull': {
+    kk: 'Ұзындығы — күш, көлбеуі — көтерілу бұрышы',
+    ru: 'Длина тяги — сила, наклон — угол подъёма',
+    en: 'Drag length is power, drag slope is launch angle',
+  },
+  'hud.angle': { kk: 'Бұрыш', ru: 'Угол', en: 'Angle' },
   'aim.hintKeyboard': {
-    kk: '← → бұрыш, бос орынды ұста — күш',
-    ru: '← → угол, пробел удерживать — сила',
-    en: '← → angle, hold Space for power',
+    kk: '← → бағыт, W/S көтерілу, бос орынды ұста — күш',
+    ru: '← → направление, W/S — подъём, пробел удерживать — сила',
+    en: '← → direction, W/S elevation, hold Space for power',
   },
   'aim.cancel': { kk: 'Болдырмау үшін саусақты ортаға қайтар', ru: 'Верни палец в центр — бросок отменится', en: 'Return to centre to cancel' },
 

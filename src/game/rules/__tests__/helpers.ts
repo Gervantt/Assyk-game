@@ -47,8 +47,9 @@ export function findThrow(
   for (let yi = 0; yi <= 16; yi++) {
     const yaw = -0.24 + yi * 0.03
     for (const deg of [5, 8, 12, 16, 22, 28, 36, 45]) {
-      for (let pi = 0; pi <= 10; pi++) {
-        const power = 0.25 + pi * 0.075
+      // сетка начинается с нуля: слабые броски нужны для проверки «недолёта»
+      for (let pi = 0; pi <= 12; pi++) {
+        const power = pi * 0.084
         const input = shot(yaw, deg, power)
         if (accept(outcomeOf(makeWorld(), input))) return input
       }

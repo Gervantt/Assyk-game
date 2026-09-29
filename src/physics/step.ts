@@ -139,7 +139,8 @@ export function stepWorld(state: WorldState, events: SimEvent[]): void {
     const vT = length(b.vx, b.vy)
     if (vT > 0) {
       const dvT = surface.mu * (1 + surface.eGround) * impact
-      const lost = dvT < vT ? dvT : vT
+      const cap = vT * PHYSICS.maxTangentialLoss
+      const lost = dvT < cap ? dvT : cap
       const k = (vT - lost) / vT
       b.vx = b.vx * k
       b.vy = b.vy * k

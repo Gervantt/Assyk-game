@@ -1,73 +1,106 @@
-import { useCallback, useEffect, useRef } from 'react'
-import { AIM, aimFromAngles, aimFromPull, clamp, makeThrow, PHYSICS, type AimState, type WorldState } from '@/physics'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  AIM,
+  aimFromAngles,
+  aimFromPull,
+  clamp,
+  makeThrow,
+  PHYSICS,
+  type AimState,
+  type WorldState,
+} from '@/physics'
 import { useAimStore } from '@/store/useAimStore'
 import { useGameStore } from '@/store/useGameStore'
 
 /** Доля меньшей стороны экрана, за которую тяга достигает максимума. */
 const MAX_PULL_RATIO = 0.26
-/** Скорость набора силы с клавиатуры, доля в секунду. */
+/** Свайп на эту долю экрана поворачивает направление на весь диапазон. */
+const SWIPE_RATIO = 0.42
+/** Порог, после которого жест определяется как поворот или как натяжение. */
+const GESTURE_THRESHOLD = 12
 const KEY_POWER_RATE = 0.85
-const KEY_ANGLE_RATE = 1.5
+const KEY_ANGLE_RATE = 1.1
 
-function maxPullPx(): number {
-  return Math.min(window.innerWidth, window.innerHeight) * MAX_PULL_RATIO
+function shortSide(): number {
+  return Math.min(window.innerWidth, window.innerHeight)
 }
 
-/**
- * «Рогатка»: зажать в любой точке, тянуть назад, отпустить.
- * Направление = противоположно вектору тяги, сила = длина тяги.
- * Работает мышью и касанием через Pointer Events.
- */
 export interface AimLayerProps {
   world: WorldState
   enabled: boolean
   /** ограничение силы уровня, 0..1 */
   maxPower?: number
-  /**
-   * Обучение может не пропустить бросок: вернуть false, чтобы отменить его
-   * и подсказать, что поправить. В обычной игре не задаётся.
-   */
+  /** обучение может зафиксировать угол подъёма кнопкой-пресетом */
+  elevationLock?: number | null
+  /** обучение может не пропустить бросок */
   gate?: (aim: AimState) => boolean
 }
 
-export function AimLayer({ world, enabled, maxPower = 1, gate }: AimLayerProps) {
-  const startRef = useRef<{ x: number; y: number; id: number } | null>(null)
+/**
+ * Два жеста вместо одного.
+ *   1. Горизонтальный свайп — направление броска, камера поворачивается следом.
+ *   2. Натяжение вниз — сила (длина) и угол подъёма (наклон тяги).
+ * Какой это жест, решается по первому заметному движению пальца.
+ */
+export function AimLayer({ world, enabled, maxPower = 1, elevationLock = null, gate }: AimLayerProps) {
+  const startRef = useRef<{ x: number; y: number; id: number; yaw: number } | null>(null)
+  const [band, setBand] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null)
   const throwSaka = useGameStore((s) => s.throwSaka)
 
   const origin = { x: 0, y: world.throwLineY }
 
-  const update = useCallback(
-    (dxPx: number, dyPx: number) => {
-      // Тянем назад — бросок вперёд. Горизонтальная часть тяги поворачивает
-      // направление, вертикальная задаёт угол подъёма, длина — силу.
-      const max = maxPullPx()
-      const yaw = clamp(-(dxPx / max) * AIM.maxYaw * 2, -AIM.maxYaw, AIM.maxYaw)
-      const aim = aimFromPull(yaw, { dx: dxPx, dy: dyPx, maxPull: max })
-      useAimStore.setState({ ...aim, originX: origin.x, originY: origin.y })
+  const applyPull = useCallback(
+    (dx: number, dy: number, yaw: number) => {
+      const aim = aimFromPull(yaw, { dx, dy, maxPull: shortSide() * MAX_PULL_RATIO })
+      useAimStore.getState().setAim({
+        ...aim,
+        elevation: elevationLock ?? aim.elevation,
+        originX: origin.x,
+        originY: origin.y,
+      })
     },
-    [origin.x, origin.y],
+    [elevationLock, origin.x, origin.y],
   )
 
   const release = useCallback(() => {
     const aim = useAimStore.getState()
-    if (aim.active && aim.power > 0 && (!gate || gate(aim))) {
+    if (aim.mode === 'pull' && aim.active && aim.power > 0 && (!gate || gate(aim))) {
       throwSaka(makeThrow(aim, { x: aim.originX, y: aim.originY }, maxPower))
     }
     useAimStore.getState().reset()
     startRef.current = null
+    setBand(null)
   }, [throwSaka, maxPower, gate])
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!enabled) return
     e.currentTarget.setPointerCapture(e.pointerId)
-    startRef.current = { x: e.clientX, y: e.clientY, id: e.pointerId }
-    update(0, 0)
+    startRef.current = { x: e.clientX, y: e.clientY, id: e.pointerId, yaw: useAimStore.getState().yaw }
+    useAimStore.getState().setMode('idle')
   }
 
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const s = startRef.current
     if (!enabled || !s || s.id !== e.pointerId) return
-    update(e.clientX - s.x, e.clientY - s.y)
+    const dx = e.clientX - s.x
+    const dy = e.clientY - s.y
+    const store = useAimStore.getState()
+
+    if (store.mode === 'idle') {
+      if (Math.abs(dx) < GESTURE_THRESHOLD && Math.abs(dy) < GESTURE_THRESHOLD) return
+      // тянем вниз — это натяжение; ведём вбок — это поворот направления
+      store.setMode(dy > GESTURE_THRESHOLD && Math.abs(dy) >= Math.abs(dx) ? 'pull' : 'direction')
+    }
+
+    const mode = useAimStore.getState().mode
+    if (mode === 'direction') {
+      const span = shortSide() * SWIPE_RATIO
+      useAimStore.getState().setYaw(clamp(s.yaw + (dx / span) * AIM.maxYaw * 2, -AIM.maxYaw, AIM.maxYaw))
+      setBand(null)
+    } else if (mode === 'pull') {
+      applyPull(dx, dy, useAimStore.getState().yaw)
+      setBand({ x0: s.x, y0: s.y, x1: e.clientX, y1: e.clientY })
+    }
   }
 
   const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -76,9 +109,8 @@ export function AimLayer({ world, enabled, maxPower = 1, gate }: AimLayerProps) 
     release()
   }
 
-  // --- клавиатура (доступность): стрелки — поворот, W/S — подъём, пробел — сила ---
+  // --- клавиатура: стрелки — поворот, W/S — угол подъёма, пробел — сила ---
   const keys = useRef({ left: false, right: false, up: false, down: false, space: false })
-  const yaw = useRef(0)
   const elevation = useRef(PHYSICS.maxElevation * 0.35)
   const power = useRef(0)
 
@@ -91,14 +123,25 @@ export function AimLayer({ world, enabled, maxPower = 1, gate }: AimLayerProps) 
       const dt = Math.min((now - prev) / 1000, 0.05)
       prev = now
       const k = keys.current
-      if (k.left) yaw.current = Math.max(-AIM.maxYaw, yaw.current - KEY_ANGLE_RATE * dt)
-      if (k.right) yaw.current = Math.min(AIM.maxYaw, yaw.current + KEY_ANGLE_RATE * dt)
+      const store = useAimStore.getState()
+      let touched = false
+
+      if (k.left || k.right) {
+        const delta = (k.right ? 1 : -1) * KEY_ANGLE_RATE * dt
+        store.setYaw(clamp(store.yaw + delta, -AIM.maxYaw, AIM.maxYaw))
+        store.setMode('direction')
+        touched = true
+      }
       if (k.up) elevation.current = Math.min(PHYSICS.maxElevation, elevation.current + KEY_ANGLE_RATE * dt)
       if (k.down) elevation.current = Math.max(0, elevation.current - KEY_ANGLE_RATE * dt)
-      if (k.space) power.current = Math.min(1, power.current + KEY_POWER_RATE * dt)
-      if (k.left || k.right || k.up || k.down || k.space) {
-        useAimStore.setState({
-          ...aimFromAngles(yaw.current, elevation.current, Math.max(power.current, 0.02)),
+      if (k.space) {
+        power.current = Math.min(1, power.current + KEY_POWER_RATE * dt)
+        store.setMode('pull')
+        touched = true
+      }
+      if (touched || k.up || k.down) {
+        store.setAim({
+          ...aimFromAngles(store.yaw, elevationLock ?? elevation.current, Math.max(power.current, 0.02)),
           originX: origin.x,
           originY: origin.y,
         })
@@ -125,10 +168,11 @@ export function AimLayer({ world, enabled, maxPower = 1, gate }: AimLayerProps) 
       else if (e.code === 'Space') {
         keys.current.space = false
         if (power.current > 0) {
-          const aim = aimFromAngles(yaw.current, elevation.current, power.current)
+          const store = useAimStore.getState()
+          const aim = aimFromAngles(store.yaw, elevationLock ?? elevation.current, power.current)
           if (!gate || gate(aim)) throwSaka(makeThrow(aim, origin, maxPower))
           power.current = 0
-          useAimStore.getState().reset()
+          store.reset()
         }
       }
     }
@@ -140,7 +184,7 @@ export function AimLayer({ world, enabled, maxPower = 1, gate }: AimLayerProps) 
       window.removeEventListener('keydown', down)
       window.removeEventListener('keyup', up)
     }
-  }, [enabled, origin.x, origin.y, throwSaka, maxPower, gate])
+  }, [enabled, origin.x, origin.y, throwSaka, maxPower, gate, elevationLock])
 
   return (
     <div
@@ -150,6 +194,24 @@ export function AimLayer({ world, enabled, maxPower = 1, gate }: AimLayerProps) 
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
-    />
+    >
+      {/* резинка рогатки */}
+      {band && (
+        <svg className="pointer-events-none absolute inset-0 h-full w-full">
+          <line
+            x1={band.x1}
+            y1={band.y1}
+            x2={band.x0}
+            y2={band.y0}
+            stroke="#f0c23c"
+            strokeWidth={3}
+            strokeLinecap="round"
+            opacity={0.75}
+          />
+          <circle cx={band.x0} cy={band.y0} r={7} fill="none" stroke="#f0c23c" strokeWidth={2} opacity={0.5} />
+          <circle cx={band.x1} cy={band.y1} r={11} fill="#f0c23c" opacity={0.25} />
+        </svg>
+      )}
+    </div>
   )
 }

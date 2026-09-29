@@ -12,6 +12,7 @@ export function PowerBar({ zone }: { zone?: [number, number] }) {
   const t = useT()
   const power = useAimStore((s) => s.power)
   const active = useAimStore((s) => s.active)
+  const elevation = useAimStore((s) => s.elevation)
 
   return (
     <div
@@ -33,6 +34,9 @@ export function PowerBar({ zone }: { zone?: [number, number] }) {
       </div>
       <span className="w-9 text-right font-mono text-xs text-steppe-100">
         {Math.round(power * 100)}
+      </span>
+      <span className="ml-1 w-12 text-right font-mono text-xs text-sky-450">
+        {Math.round((elevation * 180) / Math.PI)}°
       </span>
     </div>
   )
