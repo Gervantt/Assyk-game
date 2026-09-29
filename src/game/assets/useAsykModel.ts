@@ -5,12 +5,12 @@ import { normalizeAsyk, proceduralAsyk } from './asykGeometry'
 
 export const ASYK_MODEL_URL = '/models/asyk.glb'
 
-interface AsykModelData {
+interface AsykModel {
   geometry: THREE.BufferGeometry
   map: THREE.Texture | null
 }
 
-let cached: AsykModelData | null = null
+let cached: AsykModel | null = null
 let failed = false
 
 /**
@@ -20,9 +20,9 @@ let failed = false
  * Модель грузится без Suspense: если файла нет или он битый, игра молча
  * остаётся на примитиве и не показывает белый экран.
  */
-export function useAsykModel(): AsykModelData & { fromModel: boolean } {
+export function useAsykModel(): AsykModel & { fromModel: boolean } {
   const fallback = useMemo(() => ({ geometry: proceduralAsyk(), map: null }), [])
-  const [model, setModel] = useState<AsykModelData | null>(cached)
+  const [model, setModel] = useState<AsykModel | null>(cached)
 
   useEffect(() => {
     if (cached || failed) return
@@ -41,11 +41,10 @@ export function useAsykModel(): AsykModelData & { fromModel: boolean } {
           failed = true
           return
         }
-        const sourceMaterial = Array.isArray(found.material) ? found.material[0] : found.material
-        const map = (sourceMaterial as THREE.MeshStandardMaterial).map ?? null
+        const material = Array.isArray(found.material) ? found.material[0] : found.material
         cached = {
           geometry: normalizeAsyk(found.geometry.clone().applyMatrix4(found.matrixWorld)),
-          map,
+          map: (material as THREE.MeshStandardMaterial).map ?? null,
         }
         setModel(cached)
       },

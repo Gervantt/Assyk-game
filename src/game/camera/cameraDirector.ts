@@ -30,11 +30,11 @@ interface Shot {
 
 const SHOTS: Record<CameraState, Shot> = {
   /** за спиной игрока: кон впереди, читается направление */
-  aimDirection: { height: 2.2, distance: 4.4, orbit: 0, damp: 0.45 },
+  aimDirection: { height: 2.05, distance: 4.0, orbit: 0, damp: 0.45 },
   /** облёт на три четверти сбоку: профиль дуги читается как в Angry Birds */
-  aimPull: { height: 2.5, distance: 5.4, orbit: -0.75, damp: 0.5 },
+  aimPull: { height: 2.15, distance: 4.3, orbit: -0.75, damp: 0.5 },
   /** сопровождение сбоку */
-  flight: { height: 2.6, distance: 5.0, orbit: -0.75, damp: 0.35 },
+  flight: { height: 2.45, distance: 4.4, orbit: -0.75, damp: 0.35 },
   /** подъём над коном: видно, что и куда легло */
   result: { height: 5.6, distance: 2.8, orbit: -0.3, damp: 0.6 },
   /** почти вертикально — режим прицеливания «вид сверху» */
@@ -104,7 +104,8 @@ export function frameCamera(
     // ровно посередине между сақа и коном: в кадре и замах, и цель
     wantTarget.set(fx * fieldRadius * 0.3, 0.45, playerZ * 0.55 + fz * fieldRadius * 0.3)
   } else if (next === 'aimDirection') {
-    wantTarget.set(fx * 1.2, 0.3, playerZ * 0.42 + fz * 1.2)
+    // цель кадра ближе к игроку: так сақа и начало стрелки остаются в кадре
+    wantTarget.set(fx * 1.0, 0.3, playerZ * 0.72 + fz * 1.0)
   } else {
     wantTarget.set(0, 0, 0)
   }

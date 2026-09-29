@@ -18,17 +18,18 @@ interface Pose {
   z: number
   tumble: number
   yaw: number
+  side: number
   visible: boolean
 }
 
 /** Позы всех тел в момент времени t (сек) от начала броска. */
-function poseFromFrames(frames: Frame[], t: number, out: Map<number, Pose>) {
+function poseFromFrames(frames: Frame[], t: number, sides: Map<number, number>, out: Map<number, Pose>) {
   const last = frames[frames.length - 1]!
   const raw = t / FRAME_DT
   const i = Math.floor(raw)
   if (i >= frames.length - 1) {
     for (const b of last.bodies) {
-      out.set(b.id, { x: b.x, y: b.y, z: b.z, tumble: b.tumble, yaw: b.yaw, visible: !b.removed })
+      out.set(b.id, { x: b.x, y: b.y, z: b.z, tumble: b.tumble, yaw: b.yaw, side: sides.get(b.id) ?? 0, visible: !b.removed })
     }
     return
   }
@@ -44,6 +45,7 @@ function poseFromFrames(frames: Frame[], t: number, out: Map<number, Pose>) {
       z: pa.z + (pb.z - pa.z) * k,
       tumble: pa.tumble + (pb.tumble - pa.tumble) * k,
       yaw: pa.yaw + (pb.yaw - pa.yaw) * k,
+      side: sides.get(pa.id) ?? 0,
       visible: !pa.removed,
     })
   }
@@ -53,17 +55,10 @@ function restPose(world: WorldState, out: Map<number, Pose>) {
   for (const b of world.bodies) {
     if (b.kind === BODY_SAKA) {
       // между бросками сақа всегда лежит на линии броска — игрок её подобрал
-      out.set(b.id, {
-        x: 0,
-        y: world.throwLineY,
-        z: b.radius,
-        tumble: b.tumble,
-        yaw: b.yaw,
-        visible: true,
-      })
+      out.set(b.id, { x: 0, y: world.throwLineY, z: b.radius, tumble: b.tumble, yaw: b.yaw, side: 0, visible: true })
       continue
     }
-    out.set(b.id, { x: b.x, y: b.y, z: b.z, tumble: b.tumble, yaw: b.yaw, visible: !b.removed })
+    out.set(b.id, { x: b.x, y: b.y, z: b.z, tumble: b.tumble, yaw: b.yaw, side: b.side, visible: !b.removed })
   }
 }
 
@@ -77,9 +72,12 @@ function Stones({ world }: { world: WorldState }) {
     if (!mesh || stones.length === 0) return
     const dummy = new THREE.Object3D()
     stones.forEach((b, i) => {
-      dummy.position.set(b.x, b.radius * 0.42, toSceneZ(b.y))
+      // Коллайдер камня — сфера радиуса b.radius с центром на высоте b.radius.
+      // Меш обязан её повторять: раньше он был вдвое ниже, и сақа, визуально
+      // перелетая валун, всё равно билась о невидимую верхушку.
+      dummy.position.set(b.x, b.radius, toSceneZ(b.y))
       dummy.rotation.set(0, b.id * 1.1, 0)
-      dummy.scale.set(b.radius, b.radius * 0.78, b.radius)
+      dummy.scale.set(b.radius * 1.04, b.radius * 0.98, b.radius * 1.04)
       dummy.updateMatrix()
       mesh.setMatrixAt(i, dummy.matrix)
     })
@@ -110,6 +108,7 @@ function Stones({ world }: { world: WorldState }) {
 export function Bodies({ world }: { world: WorldState }) {
   const { geometry, map } = useAsykModel()
   const asyks = useMemo(() => world.bodies.filter((b) => b.kind === BODY_ASYK), [world])
+  const sides = useMemo(() => new Map(world.bodies.map((b) => [b.id, b.side])), [world])
 
   const meshRef = useRef<THREE.InstancedMesh>(null)
   const sakaRef = useRef<THREE.Mesh>(null)
@@ -117,10 +116,7 @@ export function Bodies({ world }: { world: WorldState }) {
   const dummy = useMemo(() => new THREE.Object3D(), [])
   const poses = useMemo(() => new Map<number, Pose>(), [])
 
-  /**
-   * Коллайдер — сфера радиуса radius, её центр в покое стоит на высоте radius.
-   * Меш плоский, поэтому рисуем его ниже центра сферы, иначе асық «парит».
-   */
+  /** Lower the rendered mesh so it rests on the physics body's ground sphere. */
   const meshHalf = useMemo(() => {
     geometry.computeBoundingBox()
     const size = new THREE.Vector3()
@@ -137,7 +133,7 @@ export function Bodies({ world }: { world: WorldState }) {
     const pb = getPlayback()
 
     if (phase === 'animating' && pb.active && pb.frames.length > 0) {
-      poseFromFrames(pb.frames, pb.t, poses)
+      poseFromFrames(pb.frames, pb.t, sides, poses)
     } else {
       restPose(world, poses)
     }
@@ -150,8 +146,7 @@ export function Bodies({ world }: { world: WorldState }) {
         const p = poses.get(b.id)
         if (!p) return
         dummy.position.set(p.x, p.z - drop, toSceneZ(p.y))
-        // кувыркание вокруг горизонтальной оси, рыскание вокруг вертикали
-        dummy.rotation.set(p.tumble, p.yaw, 0, 'YXZ')
+        dummy.rotation.set(p.tumble + (p.side * Math.PI) / 2, p.yaw, 0, 'YXZ')
         dummy.scale.setScalar(p.visible ? s : 0)
         dummy.updateMatrix()
         mesh.setMatrixAt(i, dummy.matrix)
@@ -163,7 +158,8 @@ export function Bodies({ world }: { world: WorldState }) {
     const sp = poses.get(0)
     if (saka && sp) {
       const s = PHYSICS.sakaRadius * VISUAL_SCALE
-      saka.position.set(sp.x, sp.z - (PHYSICS.sakaRadius - meshHalf * s), toSceneZ(sp.y))
+      const drop = PHYSICS.sakaRadius - meshHalf * s
+      saka.position.set(sp.x, sp.z - drop, toSceneZ(sp.y))
       saka.rotation.set(sp.tumble, sp.yaw, 0, 'YXZ')
       saka.scale.setScalar(s)
       saka.visible = sp.visible
@@ -172,7 +168,7 @@ export function Bodies({ world }: { world: WorldState }) {
     // тень-пятно под сақа: сжимается и светлеет, когда сақа в воздухе
     const blob = shadowRef.current
     if (blob && sp) {
-      const k = Math.max(0, 1 - (sp.z - PHYSICS.sakaRadius) * 1.1)
+      const k = Math.max(0, 1 - sp.z * 1.7)
       blob.position.set(sp.x, 0.004, toSceneZ(sp.y))
       blob.scale.setScalar(Math.max(0.35, k))
       const mat = blob.material as THREE.MeshBasicMaterial

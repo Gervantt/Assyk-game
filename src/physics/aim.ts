@@ -106,6 +106,16 @@ export interface TrajectoryPreview {
   points: TrajectoryPoint[]
   /** точка первого касания земли — кольцо подсказки */
   firstTouch: TrajectoryPoint | null
+  /** во что упрётся сақа: камень на пути обрывает дугу */
+  blockedAt: TrajectoryPoint | null
+}
+
+/** Препятствие для подсказки: сфера с центром на высоте своего радиуса. */
+export interface TrajectoryObstacle {
+  x: number
+  y: number
+  z: number
+  radius: number
 }
 
 /**
@@ -118,6 +128,7 @@ export function predictTrajectory(
   surfaceId: number,
   radius = PHYSICS.sakaRadius,
   seconds = 3,
+  obstacles: TrajectoryObstacle[] = [],
 ): TrajectoryPreview {
   const dt = PHYSICS.dt
   const surface = surfaceAt(surfaceId)
@@ -134,6 +145,7 @@ export function predictTrajectory(
 
   const points: TrajectoryPoint[] = [{ x, y, z }]
   let firstTouch: TrajectoryPoint | null = null
+  let blockedAt: TrajectoryPoint | null = null
   const steps = Math.floor(seconds / dt)
 
   for (let i = 0; i < steps; i++) {
@@ -172,8 +184,25 @@ export function predictTrajectory(
       }
     }
 
+    // дуга обрывается на препятствии: иначе подсказка обещала бы полёт,
+    // которого не будет
+    for (const o of obstacles) {
+      const dx = x - o.x
+      const dy = y - o.y
+      const dz = z - o.z
+      const rsum = radius + o.radius
+      if (dx * dx + dy * dy + dz * dz < rsum * rsum) {
+        blockedAt = { x, y, z }
+        break
+      }
+    }
+    if (blockedAt) {
+      points.push({ x, y, z })
+      break
+    }
+
     if (i % 4 === 0) points.push({ x, y, z })
   }
 
-  return { points, firstTouch }
+  return { points, firstTouch, blockedAt }
 }

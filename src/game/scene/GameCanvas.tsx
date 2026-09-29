@@ -7,6 +7,7 @@ import { FieldMarks } from './FieldMarks'
 import { Ground } from './Ground'
 import { AimIndicator, type PreviewMode } from './AimIndicator'
 import { PlaybackDriver } from './PlaybackDriver'
+import { ProjectionBridge } from './ProjectionBridge'
 import { SteppeEnvironment } from './SteppeEnvironment'
 import { Particles } from '@/game/fx/Particles'
 import { Trail } from '@/game/fx/Trail'
@@ -47,6 +48,7 @@ export function GameCanvas({
     >
       {/* двигает часы броска и рассылает события — должен идти первым */}
       <PlaybackDriver world={world} />
+      <ProjectionBridge />
 
       <fog attach="fog" args={['#c7b48d', 16, 34]} />
 

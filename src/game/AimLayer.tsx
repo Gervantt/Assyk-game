@@ -3,14 +3,22 @@ import {
   AIM,
   aimFromAngles,
   aimFromPull,
+  BODY_ASYK,
   clamp,
   makeThrow,
   PHYSICS,
   type AimState,
   type WorldState,
 } from '@/physics'
+import { screenToGround } from '@/game/scene/projection'
 import { useAimStore } from '@/store/useAimStore'
+import { playSound } from '@/audio'
 import { useGameStore } from '@/store/useGameStore'
+
+/** Тап считается тапом, если палец сдвинулся меньше чем на столько пикселей. */
+const TAP_SLOP = 10
+/** Насколько близко к асыку нужно ткнуть, м. */
+const TAP_RADIUS = 0.45
 
 /** Доля меньшей стороны экрана, за которую тяга достигает максимума. */
 const MAX_PULL_RATIO = 0.26
@@ -44,6 +52,7 @@ export interface AimLayerProps {
  */
 export function AimLayer({ world, enabled, maxPower = 1, elevationLock = null, gate }: AimLayerProps) {
   const startRef = useRef<{ x: number; y: number; id: number; yaw: number } | null>(null)
+  const movedRef = useRef(0)
   const [band, setBand] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null)
   const throwSaka = useGameStore((s) => s.throwSaka)
 
@@ -72,10 +81,43 @@ export function AimLayer({ world, enabled, maxPower = 1, elevationLock = null, g
     setBand(null)
   }, [throwSaka, maxPower, gate])
 
+  /**
+   * Тап по асыку: стрелка наводится прямо на него, а сам асық помечается
+   * жёлтым кольцом. Прицел при этом остаётся ручным — свайп его сбросит.
+   */
+  const tapTarget = useCallback(
+    (px: number, py: number) => {
+      const ground = screenToGround(px, py)
+      if (!ground) return
+      let picked: { id: number; x: number; y: number } | null = null
+      let best = TAP_RADIUS
+      for (const b of world.bodies) {
+        if (b.kind !== BODY_ASYK || b.removed || b.outOfField) continue
+        const d = Math.hypot(b.x - ground.x, b.y - ground.y)
+        if (d < best) {
+          best = d
+          picked = { id: b.id, x: b.x, y: b.y }
+        }
+      }
+      if (!picked) return
+      const store = useAimStore.getState()
+      const yaw = clamp(
+        Math.atan2(picked.x - origin.x, picked.y - origin.y),
+        -AIM.maxYaw,
+        AIM.maxYaw,
+      )
+      store.setYaw(yaw)
+      store.setTarget(picked.id)
+      playSound('tap')
+    },
+    [origin.x, origin.y, world],
+  )
+
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!enabled) return
     e.currentTarget.setPointerCapture(e.pointerId)
     startRef.current = { x: e.clientX, y: e.clientY, id: e.pointerId, yaw: useAimStore.getState().yaw }
+    movedRef.current = 0
     useAimStore.getState().setMode('idle')
   }
 
@@ -84,6 +126,7 @@ export function AimLayer({ world, enabled, maxPower = 1, elevationLock = null, g
     if (!enabled || !s || s.id !== e.pointerId) return
     const dx = e.clientX - s.x
     const dy = e.clientY - s.y
+    movedRef.current = Math.max(movedRef.current, Math.hypot(dx, dy))
     const store = useAimStore.getState()
 
     if (store.mode === 'idle') {
@@ -106,6 +149,13 @@ export function AimLayer({ world, enabled, maxPower = 1, elevationLock = null, g
   const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     const s = startRef.current
     if (!s || s.id !== e.pointerId) return
+    // палец почти не двигался — это тап, а не жест
+    if (movedRef.current < TAP_SLOP && useAimStore.getState().mode === 'idle') {
+      tapTarget(e.clientX, e.clientY)
+      startRef.current = null
+      setBand(null)
+      return
+    }
     release()
   }
 
