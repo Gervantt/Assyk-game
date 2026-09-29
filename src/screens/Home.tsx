@@ -8,6 +8,10 @@ import { useProgressStore } from '@/store/useProgressStore'
 import { CAMPAIGN } from '@/levels'
 import { Stars } from '@/components/Stars'
 import { BackendBanner } from '@/components/BackendBanner'
+import { useMatchStore } from '@/store/useMatchStore'
+import { useAuthStore } from '@/store/useAuthStore'
+import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import { percent } from '@/lib/format'
 import type { DictKey } from '@/i18n'
 
@@ -36,6 +40,10 @@ function ModeCard({ to, title, desc, primary = false }: {
 
 export function Home() {
   const t = useT()
+  const navigate = useNavigate()
+  const host = useMatchStore((s) => s.host)
+  const backend = useAuthStore((s) => s.status)
+  const [hosting, setHosting] = useState(false)
   const best = loadBest('training')
   const progress = useProgressStore((s) => s.progress)
   const stars = totalStars(progress)
@@ -91,6 +99,25 @@ export function Home() {
               primary={m.primary}
             />
           ))}
+          {backend === 'ready' && (
+            <button
+              type="button"
+              disabled={hosting}
+              onClick={async () => {
+                setHosting(true)
+                const id = await host()
+                setHosting(false)
+                if (id) navigate(`/m/${id}`)
+              }}
+              className="flex min-h-[44px] flex-col gap-1 rounded-3xl bg-white/5 p-5 text-left text-steppe-50 ring-1 ring-white/10 transition-transform hover:bg-white/10 active:scale-[0.98] disabled:opacity-50"
+            >
+              <span className="text-xl font-extrabold">{t('mode.friend')}</span>
+              <span className="text-sm text-steppe-300">
+                {hosting ? t('common.loading') : t('mode.friend.desc')}
+              </span>
+            </button>
+          )}
+
           <div className="flex gap-3">
             {(
               [

@@ -37,6 +37,9 @@ export interface Toast {
 
 export type CameraMode = 'player' | 'top'
 
+/** Вызывается после применённого локального броска. */
+export type ThrowHook = (input: ThrowInput, next: MatchState, summary: ThrowSummary) => void
+
 /** Всё, что задаёт партию: режим, поле, правила и ограничения. */
 export interface SessionConfig {
   mode: MatchMode
@@ -74,11 +77,18 @@ interface GameStore {
   throwSaka: (input: ThrowInput) => void
   finishPlayback: () => void
   pushToast: (key: DictKey, tone: Toast['tone']) => void
+  /** онлайн-матч подписывается сюда, чтобы отправить ход сопернику */
+  setThrowHook: (fn: ThrowHook | null) => void
+  /** применить ход соперника, минуя проверку очереди */
+  applyRemoteThrow: (input: ThrowInput) => string | null
+  /** принять готовое состояние матча: восстановление из БД и разрешение рассинхрона */
+  adoptMatch: (match: MatchState) => void
   setCamera: (c: CameraMode) => void
   dismissToast: (id: number) => void
 }
 
 let toastId = 0
+let throwHook: ThrowHook | null = null
 
 function defaultNames(mode: MatchMode): string[] {
   const locale = useI18n.getState().locale
@@ -166,6 +176,36 @@ export const useGameStore = create<GameStore>((set, get) => ({
     playSound('whoosh', { volume: 0.5 })
 
     set({ pending: next, phase: 'animating', lastSummary: summary, toasts: [] })
+    throwHook?.(input, next, summary)
+  },
+
+  setThrowHook: (fn) => {
+    throwHook = fn
+  },
+
+  adoptMatch: (match) => {
+    stopPlayback()
+    resetShake()
+    set({
+      match,
+      session: { mode: match.mode, layout: match.layout, rules: match.rules },
+      ...FRESH,
+      phase: match.status === 'finished' ? 'finished' : 'aim',
+    })
+  },
+
+  /**
+   * Ход соперника: тот же simulate() на том же состоянии. Возвращает хеш
+   * результата — его сверяют с присланным, чтобы поймать рассинхрон.
+   */
+  applyRemoteThrow: (input) => {
+    const { match } = get()
+    if (!match || match.status === 'finished') return null
+    const { match: next, summary, sim } = applyThrow(match, input)
+    beginPlayback(sim.frames, sim.events, buildPlan(sim.events, richEffects(), reducedMotion()))
+    playSound('whoosh', { volume: 0.5 })
+    set({ pending: next, phase: 'animating', lastSummary: summary, toasts: [] })
+    return summary.resultHash
   },
 
   finishPlayback: () => {

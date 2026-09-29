@@ -8,6 +8,7 @@ import { LevelPlay } from '@/screens/LevelPlay'
 import { Tutorial } from '@/screens/Tutorial'
 import { Daily } from '@/screens/Daily'
 import { Profile } from '@/screens/Profile'
+import { OnlineMatch } from '@/screens/OnlineMatch'
 
 export function App() {
   return (
@@ -19,6 +20,7 @@ export function App() {
       <Route path="/campaign/:levelId" element={<LevelPlay />} />
       <Route path="/daily" element={<Daily />} />
       <Route path="/profile" element={<Profile />} />
+      <Route path="/m/:matchId" element={<OnlineMatch />} />
       <Route path="/rules" element={<Rules />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -40,3 +40,8 @@ echo
 echo "== политики и функции =="
 run -d asyq -f supabase/tests/01-rls.sql 2>&1 |
   grep -vE '^$|^SET$|^RESET$|Pager|INSERT 0' | sed 's/^ //'
+
+echo
+echo "== матч по ссылке =="
+run -d asyq -f supabase/tests/02-online.sql 2>&1 |
+  grep -vE '^$|^SET$|^RESET$|Pager|INSERT 0' | sed 's/^ //'

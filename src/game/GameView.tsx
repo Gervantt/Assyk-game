@@ -21,6 +21,8 @@ const PREVIEW_BY_MODE: Record<string, PreviewMode> = {
 
 export interface GameViewProps {
   match: MatchState
+  /** в онлайне бросать можно только в свою очередь */
+  canThrow?: boolean
   /** обучение может зафиксировать угол подъёма кнопкой-пресетом */
   elevationLock?: number | null
   /** обучение может не пропустить бросок */
