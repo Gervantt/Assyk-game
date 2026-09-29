@@ -1,6 +1,7 @@
 import {
   createWorld,
   rngIntAt,
+  type CreateWorldOptions,
   SIDES,
   simulate,
   stateHash,
@@ -9,8 +10,9 @@ import {
   type ThrowInput,
 } from '@/physics'
 import { RULES_BY_MODE } from './config'
+import { hintForThrow } from './hints'
 import { scoreThrow } from './scoring'
-import { konIsEmpty, leader, nextPlayer } from './turn'
+import { leader, nextPlayer, objectiveMet } from './turn'
 import type {
   ApplyThrowResult,
   MatchMode,
@@ -54,12 +56,19 @@ function player(index: number, name: string): PlayerState {
   }
 }
 
+/** Всё, что описывает мир уровня помимо раскладки асыков. */
+export type WorldExtras = Pick<
+  CreateWorldOptions,
+  'obstacles' | 'movers' | 'wind' | 'bounceWalls' | 'boundsHalfWidth' | 'boundsHalfHeight'
+>
+
 export interface CreateMatchOptions {
   mode: MatchMode
   seed: number
   layout: LayoutSpec
   playerNames: string[]
   rules?: Partial<RulesConfig>
+  world?: WorldExtras
 }
 
 export function createMatch(opts: CreateMatchOptions): MatchState {
@@ -69,7 +78,7 @@ export function createMatch(opts: CreateMatchOptions): MatchState {
   return {
     mode: opts.mode,
     rules,
-    world: createWorld({ seed: opts.seed, layout: opts.layout }),
+    world: createWorld({ seed: opts.seed, layout: opts.layout, ...opts.world }),
     players,
     currentPlayer: players.length > 1 ? first : 0,
     status: 'aiming',
@@ -78,6 +87,7 @@ export function createMatch(opts: CreateMatchOptions): MatchState {
     winner: null,
     decisive: false,
     layout: opts.layout,
+    worldExtras: opts.world,
     seed: opts.seed,
   }
 }
@@ -125,6 +135,7 @@ export function applyThrow(match: MatchState, input: ThrowInput): ApplyThrowResu
     sakaLost: outcome.sakaLost,
     hits: sim.events.filter((e) => e.type === 'hit').length,
     resultHash: stateHash(world),
+    hint: hintForThrow(world, sim.events),
   }
 
   const staged: MatchState = {
@@ -135,9 +146,9 @@ export function applyThrow(match: MatchState, input: ThrowInput): ApplyThrowResu
     history: [...match.history, summary],
   }
 
-  const empty = konIsEmpty(world)
+  const done = objectiveMet(world, match.rules.goal)
   const next = nextPlayer(staged, outcome.points)
-  const over = empty || next === null
+  const over = done || next === null
 
   if (!over) {
     return { match: { ...staged, currentPlayer: next }, summary, sim }
@@ -170,5 +181,6 @@ export function restartMatch(match: MatchState, seed: number): MatchState {
     layout: match.layout,
     playerNames: match.players.map((p) => p.name),
     rules: match.rules,
+    world: match.worldExtras,
   })
 }

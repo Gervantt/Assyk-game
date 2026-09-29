@@ -10,7 +10,8 @@ const DASHES = 7
 const PREVIEW_FRACTION = 0.2
 
 /** Короткий пунктир направления от сақа. */
-export function AimIndicator({ hintLength = PREVIEW_FRACTION }: { hintLength?: number }) {
+export function AimIndicator({ hintLength }: { hintLength?: number }) {
+  const fraction = hintLength ?? PREVIEW_FRACTION
   const group = useRef<THREE.Group>(null)
   const dashes = useRef<THREE.Mesh[]>([])
   const geo = useMemo(() => new THREE.PlaneGeometry(0.045, 0.11), [])
@@ -26,7 +27,7 @@ export function AimIndicator({ hintLength = PREVIEW_FRACTION }: { hintLength?: n
     g.visible = aim.active
     if (!aim.active) return
 
-    const total = estimatedRange(aim.power) * hintLength
+    const total = estimatedRange(aim.power) * fraction
     const startGap = PHYSICS.sakaRadius + 0.04
     for (let i = 0; i < DASHES; i++) {
       const m = dashes.current[i]

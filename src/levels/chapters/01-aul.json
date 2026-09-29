@@ -1,0 +1,103 @@
+{
+  "id": "aul",
+  "order": 1,
+  "title": {
+    "kk": "Ауыл",
+    "ru": "Аул",
+    "en": "The Village"
+  },
+  "subtitle": {
+    "kk": "Алғашқы лақтырулар. Бағыт пен күшті үйрен.",
+    "ru": "Первые броски. Освой направление и силу.",
+    "en": "First throws. Learn direction and power."
+  },
+  "levels": [
+    {
+      "id": "aul-1",
+      "layout": {
+        "kind": "row",
+        "count": 1,
+        "fieldRadius": 1.3
+      },
+      "throws": 3,
+      "goal": 1,
+      "stars": [
+        1,
+        2
+      ],
+      "penalty": false
+    },
+    {
+      "id": "aul-2",
+      "layout": {
+        "kind": "row",
+        "count": 2,
+        "fieldRadius": 1.3
+      },
+      "throws": 3,
+      "goal": 2,
+      "stars": [
+        2,
+        3
+      ],
+      "penalty": false
+    },
+    {
+      "id": "aul-3",
+      "layout": {
+        "kind": "row",
+        "count": 3,
+        "fieldRadius": 1.25
+      },
+      "throws": 4,
+      "goal": 2,
+      "stars": [
+        2,
+        3
+      ],
+      "penalty": false
+    },
+    {
+      "id": "aul-4",
+      "layout": {
+        "kind": "pyramid",
+        "count": 3,
+        "fieldRadius": 1.25
+      },
+      "throws": 4,
+      "goal": 3,
+      "stars": [
+        3,
+        4
+      ]
+    },
+    {
+      "id": "aul-5",
+      "layout": {
+        "kind": "row",
+        "count": 5,
+        "fieldRadius": 1.2
+      },
+      "throws": 5,
+      "goal": 3,
+      "stars": [
+        3,
+        4
+      ]
+    },
+    {
+      "id": "aul-6",
+      "layout": {
+        "kind": "circle",
+        "count": 5,
+        "fieldRadius": 1.25
+      },
+      "throws": 5,
+      "goal": 4,
+      "stars": [
+        3,
+        4
+      ]
+    }
+  ]
+}

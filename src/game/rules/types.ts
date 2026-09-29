@@ -1,6 +1,8 @@
 import type { LayoutSpec, SimResult, ThrowInput, WorldState } from '@/physics'
+import type { HintKey } from './hints'
+import type { WorldExtras } from './match'
 
-export type MatchMode = 'training' | 'hotseat'
+export type MatchMode = 'training' | 'hotseat' | 'campaign' | 'tutorial'
 
 /** Вариативные правила. В частном матче их можно переключать. */
 export interface RulesConfig {
@@ -12,6 +14,8 @@ export interface RulesConfig {
   throwsPerPlayer: number
   /** выбил хотя бы один — бросаешь ещё раз */
   extraThrowOnKnockOut: boolean
+  /** сколько асыков надо выбить; 0 — играем, пока кон не опустеет */
+  goal: number
 }
 
 export type ComboKind = null | 'qos' | 'keremet'
@@ -45,6 +49,8 @@ export interface ThrowSummary {
   sakaLost: boolean
   hits: number
   resultHash: string
+  /** совет по этому броску, выведенный из событий симуляции */
+  hint: HintKey
 }
 
 export type MatchStatus = 'aiming' | 'finished'
@@ -62,6 +68,8 @@ export interface MatchState {
   /** ничья при пустом кону — нужен решающий бросок */
   decisive: boolean
   layout: LayoutSpec
+  /** препятствия, ветер и движущиеся асыки — нужны при перезапуске уровня */
+  worldExtras?: WorldExtras
   seed: number
 }
 

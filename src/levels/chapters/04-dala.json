@@ -1,0 +1,153 @@
+{
+  "id": "dala",
+  "order": 4,
+  "title": {
+    "kk": "Дала",
+    "ru": "Степь",
+    "en": "The Steppe"
+  },
+  "subtitle": {
+    "kk": "Жер көлбеу, күш шектеулі. Ең қиыны.",
+    "ru": "Поле с наклоном, сила ограничена. Самое сложное.",
+    "en": "Tilted ground, limited power. The hardest chapter."
+  },
+  "levels": [
+    {
+      "id": "dala-1",
+      "layout": {
+        "kind": "row",
+        "count": 4,
+        "fieldRadius": 1.25
+      },
+      "wind": {
+        "x": 0.7,
+        "y": 0
+      },
+      "throws": 5,
+      "goal": 3,
+      "stars": [
+        3,
+        4
+      ]
+    },
+    {
+      "id": "dala-2",
+      "layout": {
+        "kind": "pyramid",
+        "count": 6,
+        "fieldRadius": 1.25
+      },
+      "wind": {
+        "x": -1.0,
+        "y": 0
+      },
+      "throws": 5,
+      "goal": 4,
+      "stars": [
+        4,
+        5
+      ]
+    },
+    {
+      "id": "dala-3",
+      "layout": {
+        "kind": "row",
+        "count": 4,
+        "fieldRadius": 1.0
+      },
+      "maxPower": 0.78,
+      "throws": 5,
+      "goal": 3,
+      "stars": [
+        3,
+        4
+      ],
+      "penalty": false
+    },
+    {
+      "id": "dala-4",
+      "layout": {
+        "kind": "circle",
+        "count": 6,
+        "fieldRadius": 1.1
+      },
+      "maxPower": 0.85,
+      "wind": {
+        "x": 0.6,
+        "y": -0.3
+      },
+      "throws": 6,
+      "goal": 3,
+      "stars": [
+        3,
+        5
+      ],
+      "penalty": false
+    },
+    {
+      "id": "dala-5",
+      "layout": {
+        "kind": "pyramid",
+        "count": 6,
+        "fieldRadius": 1.25
+      },
+      "wind": {
+        "x": -0.8,
+        "y": 0
+      },
+      "obstacles": [
+        {
+          "x": 0.35,
+          "y": -1.3,
+          "radius": 0.26
+        }
+      ],
+      "throws": 6,
+      "goal": 3,
+      "stars": [
+        4,
+        5
+      ]
+    },
+    {
+      "id": "dala-6",
+      "layout": {
+        "kind": "pyramid",
+        "count": 10,
+        "fieldRadius": 1.2
+      },
+      "wind": {
+        "x": 0.55,
+        "y": 0
+      },
+      "maxPower": 0.9,
+      "obstacles": [
+        {
+          "x": -0.85,
+          "y": -1.5,
+          "radius": 0.22
+        },
+        {
+          "x": 0.85,
+          "y": -1.5,
+          "radius": 0.22
+        }
+      ],
+      "movers": [
+        {
+          "x": 0,
+          "y": 0.95,
+          "axis": "x",
+          "amplitude": 0.4,
+          "periodSec": 2.2
+        }
+      ],
+      "throws": 7,
+      "goal": 4,
+      "stars": [
+        4,
+        6
+      ]
+    }
+  ]
+}

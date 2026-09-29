@@ -3,6 +3,9 @@ import { useT } from '@/i18n'
 import { LocaleSwitch } from '@/components/LocaleSwitch'
 import { Ornament } from '@/components/Ornament'
 import { loadBest } from '@/lib/storage'
+import { loadProgress, nextUnfinished, totalStars, tutorialDone } from '@/lib/progress'
+import { CAMPAIGN } from '@/levels'
+import { Stars } from '@/components/Stars'
 import { percent } from '@/lib/format'
 import type { DictKey } from '@/i18n'
 
@@ -32,11 +35,24 @@ function ModeCard({ to, title, desc, primary = false }: {
 export function Home() {
   const t = useT()
   const best = loadBest('training')
+  const progress = loadProgress()
+  const stars = totalStars(progress)
+  const fresh = !tutorialDone() && stars === 0
 
-  const modes: Array<{ to: string; title: DictKey; desc: DictKey; primary?: boolean }> = [
-    { to: '/play/training', title: 'mode.training', desc: 'mode.training.desc', primary: true },
-    { to: '/play/hotseat', title: 'mode.hotseat', desc: 'mode.hotseat.desc' },
-  ]
+  // новичку первым предлагаем обучение, дальше — кампанию
+  const modes: Array<{ to: string; title: DictKey; desc: DictKey; primary?: boolean }> = fresh
+    ? [
+        { to: '/tutorial', title: 'mode.tutorial', desc: 'mode.tutorial.desc', primary: true },
+        { to: '/campaign', title: 'mode.campaign', desc: 'mode.campaign.desc' },
+        { to: '/play/training', title: 'mode.training', desc: 'mode.training.desc' },
+        { to: '/play/hotseat', title: 'mode.hotseat', desc: 'mode.hotseat.desc' },
+      ]
+    : [
+        { to: `/campaign/${nextUnfinished(progress).id}`, title: 'mode.campaign', desc: 'mode.campaign.desc', primary: true },
+        { to: '/play/training', title: 'mode.training', desc: 'mode.training.desc' },
+        { to: '/play/hotseat', title: 'mode.hotseat', desc: 'mode.hotseat.desc' },
+        { to: '/tutorial', title: 'mode.tutorial', desc: 'mode.tutorial.desc' },
+      ]
 
   return (
     <div className="relative min-h-full overflow-y-auto bg-night-900">
@@ -87,12 +103,23 @@ export function Home() {
           </div>
         </nav>
 
-        {best && (
-          <p className="text-center text-xs text-steppe-300">
-            {t('hud.best')}: <span className="font-bold text-steppe-50">{best.score}</span> ·{' '}
-            {percent(best.accuracy)}
-          </p>
-        )}
+        <div className="flex flex-col items-center gap-2 text-center text-xs text-steppe-300">
+          {stars > 0 && (
+            <Link to="/campaign" className="flex items-center gap-2 hover:text-steppe-50">
+              <Stars value={3} size={13} />
+              <span className="font-bold text-steppe-50">
+                {stars} / {CAMPAIGN.length * 3}
+              </span>
+              <span>{t('campaign.stars')}</span>
+            </Link>
+          )}
+          {best && (
+            <p>
+              {t('hud.best')}: <span className="font-bold text-steppe-50">{best.score}</span> ·{' '}
+              {percent(best.accuracy)}
+            </p>
+          )}
+        </div>
 
         <footer className="mt-auto pt-6 text-center text-[11px] text-steppe-300/70">
           Narxoz Incubator 2026 · {t('aim.hintKeyboard')}

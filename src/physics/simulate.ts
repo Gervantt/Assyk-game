@@ -66,6 +66,19 @@ export function simulate(state: WorldState, input: ThrowInput): SimResult {
   }
   s.rngCursor = cursor
 
+  // Колеблющиеся асыки возвращаются в стартовую фазу. Так игрок между бросками
+  // видит именно ту точку, из которой асық двинется в следующий раз, и движение
+  // остаётся предсказуемым — как и вся остальная физика.
+  for (const m of s.movers) {
+    const b = s.bodies[m.bodyId]
+    if (!b || b.removed) continue
+    b.x = m.axis === 0 ? m.baseX - m.amplitude : m.baseX
+    b.y = m.axis === 1 ? m.baseY - m.amplitude : m.baseY
+    b.vx = 0
+    b.vy = 0
+    b.spin = 0
+  }
+
   if (saka.removed) {
     events.push({ type: 'sakaLost', tick: s.tick })
   } else if (fieldContains(s.field, saka.x, saka.y)) {

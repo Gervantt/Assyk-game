@@ -1,4 +1,4 @@
-import { asyksInField, type WorldState } from '@/physics'
+import { asyksInField, BODY_ASYK, type WorldState } from '@/physics'
 import type { MatchState, PlayerState, RulesConfig } from './types'
 
 /** Остались ли у игрока броски. */
@@ -9,6 +9,20 @@ export function hasThrowsLeft(p: PlayerState, rules: RulesConfig): boolean {
 /** Кон пуст — раунд закончен (правило 6). */
 export function konIsEmpty(world: WorldState): boolean {
   return asyksInField(world).length === 0
+}
+
+/** Сколько асыков уже выбито из кона (улетевшие за пределы мира тоже считаются). */
+export function knockedOutCount(world: WorldState): number {
+  return world.bodies.filter((b) => b.kind === BODY_ASYK && b.outOfField).length
+}
+
+/**
+ * Задача раунда выполнена. В обычной игре это пустой кон,
+ * в испытании — заданное число выбитых асыков.
+ */
+export function objectiveMet(world: WorldState, goal: number): boolean {
+  if (goal <= 0) return konIsEmpty(world)
+  return knockedOutCount(world) >= goal
 }
 
 /**

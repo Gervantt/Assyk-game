@@ -1,7 +1,15 @@
 import { PHYSICS } from './config'
 import { quantize } from './math'
 import { rngIntAt } from './rng'
-import { BODY_ASYK, BODY_SAKA, type Body, type Field, type WorldState } from './types'
+import {
+  BODY_ASYK,
+  BODY_SAKA,
+  BODY_STONE,
+  type Body,
+  type Field,
+  type Mover,
+  type WorldState,
+} from './types'
 
 export type LayoutKind = 'row' | 'pyramid' | 'circle' | 'square'
 
@@ -57,6 +65,24 @@ export function layoutPositions(spec: LayoutSpec): Array<{ x: number; y: number 
   return out.map((p) => ({ x: quantize(p.x), y: quantize(p.y) }))
 }
 
+/** Неподвижное препятствие на поле. */
+export interface ObstacleSpec {
+  x: number
+  y: number
+  radius: number
+}
+
+/** Асық, который ходит туда-сюда, пока его не задели. */
+export interface MoverSpec {
+  x: number
+  y: number
+  /** 'x' — поперёк поля, 'y' — от игрока и обратно */
+  axis: 'x' | 'y'
+  amplitude: number
+  /** период колебания в секундах */
+  periodSec: number
+}
+
 export interface CreateWorldOptions {
   seed: number
   layout: LayoutSpec
@@ -64,6 +90,10 @@ export interface CreateWorldOptions {
   boundsHalfWidth?: number
   boundsHalfHeight?: number
   bounceWalls?: boolean
+  obstacles?: ObstacleSpec[]
+  movers?: MoverSpec[]
+  /** наклон поля: постоянное ускорение, м/с^2 */
+  wind?: { x: number; y: number }
 }
 
 /** Собирает стартовый мир: сақа на линии броска (id 0) + асыки в кону. */
@@ -110,6 +140,61 @@ export function createWorld(opts: CreateWorldOptions): WorldState {
     })
   })
 
+  // колеблющиеся асыки — обычные асыки плюс запись в movers
+  const movers: Mover[] = []
+  for (const m of opts.movers ?? []) {
+    const id = bodies.length
+    bodies.push({
+      id,
+      kind: BODY_ASYK,
+      x: quantize(m.x),
+      y: quantize(m.y),
+      vx: 0,
+      vy: 0,
+      radius: PHYSICS.asykRadius,
+      mass: PHYSICS.asykMass,
+      angle: 0,
+      spin: 0,
+      outOfField: false,
+      removed: false,
+      side: rngIntAt(opts.seed, 2000 + id, 4),
+      scored: false,
+    })
+    movers.push({
+      bodyId: id,
+      baseX: quantize(m.x),
+      baseY: quantize(m.y),
+      axis: m.axis === 'x' ? 0 : 1,
+      amplitude: quantize(m.amplitude),
+      period: Math.max(2, Math.round(m.periodSec / PHYSICS.dt)),
+    })
+  }
+
+  // камни-препятствия
+  for (const o of opts.obstacles ?? []) {
+    bodies.push({
+      id: bodies.length,
+      kind: BODY_STONE,
+      x: quantize(o.x),
+      y: quantize(o.y),
+      vx: 0,
+      vy: 0,
+      radius: quantize(o.radius),
+      mass: PHYSICS.asykMass,
+      angle: 0,
+      spin: 0,
+      outOfField: true,
+      removed: false,
+      side: 0,
+      scored: false,
+    })
+  }
+
+  // ветер сильнее трения превратил бы симуляцию в вечный разгон
+  const windCap = PHYSICS.friction * 0.8
+  const wx = clampAbs(opts.wind?.x ?? 0, windCap)
+  const wy = clampAbs(opts.wind?.y ?? 0, windCap)
+
   return {
     bodies,
     field,
@@ -118,6 +203,9 @@ export function createWorld(opts: CreateWorldOptions): WorldState {
       halfHeight: opts.boundsHalfHeight ?? 4.6,
       bounce: opts.bounceWalls ?? false,
     },
+    windX: quantize(wx),
+    windY: quantize(wy),
+    movers,
     throwLineY,
     seed: opts.seed,
     rngCursor: 0,
@@ -125,11 +213,18 @@ export function createWorld(opts: CreateWorldOptions): WorldState {
   }
 }
 
+function clampAbs(v: number, limit: number): number {
+  return v > limit ? limit : v < -limit ? -limit : v
+}
+
 export function cloneWorld(s: WorldState): WorldState {
   return {
     bodies: s.bodies.map((b) => ({ ...b })),
     field: { ...s.field },
     bounds: { ...s.bounds },
+    windX: s.windX,
+    windY: s.windY,
+    movers: s.movers.map((m) => ({ ...m })),
     throwLineY: s.throwLineY,
     seed: s.seed,
     rngCursor: s.rngCursor,

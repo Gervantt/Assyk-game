@@ -8,7 +8,9 @@
 /** Вид тела. Число, а не строка — чтобы хеш состояния был стабилен и компактен. */
 export const BODY_ASYK = 0
 export const BODY_SAKA = 1
-export type BodyKind = typeof BODY_ASYK | typeof BODY_SAKA
+/** Камень: неподвижное препятствие с бесконечной массой. */
+export const BODY_STONE = 2
+export type BodyKind = typeof BODY_ASYK | typeof BODY_SAKA | typeof BODY_STONE
 
 export interface Body {
   id: number
@@ -52,10 +54,31 @@ export interface WorldBounds {
   bounce: boolean
 }
 
+/**
+ * Колеблющийся асық. Позиция задаётся треугольной волной от номера тика —
+ * только целочисленный остаток и арифметика, поэтому детерминизм сохраняется.
+ * При первом же столкновении асық «срывается» и дальше живёт обычной физикой.
+ */
+export interface Mover {
+  bodyId: number
+  baseX: number
+  baseY: number
+  /** 0 — вдоль X, 1 — вдоль Y */
+  axis: number
+  amplitude: number
+  /** период колебания в тиках */
+  period: number
+}
+
 export interface WorldState {
   bodies: Body[]
   field: Field
   bounds: WorldBounds
+  /** постоянное ускорение: наклон поля или ветер, м/с^2 */
+  windX: number
+  windY: number
+  /** асыки, которые ходят туда-сюда, пока их не задели */
+  movers: Mover[]
   /** линия броска: сақа стартует отсюда */
   throwLineY: number
   /** seed матча и курсор PRNG — вся случайность детерминирована ими */

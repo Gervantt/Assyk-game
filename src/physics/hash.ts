@@ -18,6 +18,7 @@ export function stateHash(state: WorldState): string {
   let h = 2166136261 >>> 0
   h = fnv(h, state.bodies.length)
   h = fnv(h, state.rngCursor)
+  h = fnv(h, state.movers.length)
   for (const b of state.bodies) {
     h = fnv(h, b.id)
     h = fnv(h, q(b.x))

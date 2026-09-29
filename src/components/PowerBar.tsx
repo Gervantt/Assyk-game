@@ -7,7 +7,8 @@ export function powerColor(p: number): string {
   return `hsl(${hue} 82% 52%)`
 }
 
-export function PowerBar() {
+/** zone — подсвеченный диапазон силы, нужен в обучении. */
+export function PowerBar({ zone }: { zone?: [number, number] }) {
   const t = useT()
   const power = useAimStore((s) => s.power)
   const active = useAimStore((s) => s.active)
@@ -18,9 +19,15 @@ export function PowerBar() {
       style={{ opacity: active ? 1 : 0.28 }}
     >
       <span className="text-[11px] uppercase tracking-widest text-steppe-300">{t('hud.power')}</span>
-      <div className="h-2.5 w-32 overflow-hidden rounded-full bg-black/45 ring-1 ring-white/15 sm:w-44">
+      <div className="relative h-2.5 w-32 overflow-hidden rounded-full bg-black/45 ring-1 ring-white/15 sm:w-44">
+        {zone && (
+          <div
+            className="absolute inset-y-0 bg-white/25 ring-1 ring-inset ring-white/40"
+            style={{ left: `${zone[0] * 100}%`, width: `${(zone[1] - zone[0]) * 100}%` }}
+          />
+        )}
         <div
-          className="h-full rounded-full transition-[width] duration-75"
+          className="relative h-full rounded-full transition-[width] duration-75"
           style={{ width: `${power * 100}%`, backgroundColor: powerColor(power) }}
         />
       </div>

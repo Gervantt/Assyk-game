@@ -1,13 +1,9 @@
 import { useEffect } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import type { MatchMode } from '@/game/rules'
-import { GameCanvas } from '@/game/scene/GameCanvas'
-import { AimLayer } from '@/game/AimLayer'
+import { GameView } from '@/game/GameView'
 import { HUD } from '@/components/HUD'
-import { Toasts } from '@/components/Toasts'
 import { ResultsOverlay } from '@/components/ResultsOverlay'
-import { Confetti } from '@/components/Confetti'
-import { Popups } from '@/game/fx/Popups'
 import { usePopupStore } from '@/game/fx/popupStore'
 import { useT } from '@/i18n'
 import { useGameStore } from '@/store/useGameStore'
@@ -21,7 +17,6 @@ export function Play() {
   const phase = useGameStore((s) => s.phase)
   const start = useGameStore((s) => s.start)
   const leave = useGameStore((s) => s.leave)
-  const celebrate = useGameStore((s) => s.celebrate)
 
   const valid = MODES.includes(mode as MatchMode) ? (mode as MatchMode) : null
 
@@ -44,14 +39,9 @@ export function Play() {
   }
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-night-900">
-      <GameCanvas world={match.world} />
-      <AimLayer world={match.world} enabled={phase === 'aim'} />
+    <GameView match={match}>
       <HUD match={match} />
-      <Popups />
-      <Toasts />
-      <Confetti active={celebrate} />
       {phase === 'finished' && <ResultsOverlay match={match} />}
-    </div>
+    </GameView>
   )
 }

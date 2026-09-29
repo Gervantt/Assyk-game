@@ -15,7 +15,16 @@ import { PopupEmitter } from '@/game/fx/Popups'
 import { useSettings } from '@/store/useSettings'
 
 /** Сцена 2.5D: камера сверху под углом, тени только от тел. */
-export function GameCanvas({ world, children }: { world: WorldState; children?: ReactNode }) {
+export function GameCanvas({
+  world,
+  children,
+  hintLength,
+}: {
+  world: WorldState
+  children?: ReactNode
+  /** доля реальной траектории в пунктире прицела; в обучении длиннее */
+  hintLength?: number
+}) {
   const rich = useSettings((s) => s.effects) === 'full'
 
   return (
@@ -62,7 +71,7 @@ export function GameCanvas({ world, children }: { world: WorldState; children?: 
         <Ground />
         <FieldMarks field={world.field} throwLineY={world.throwLineY} />
         <Bodies world={world} />
-        <AimIndicator />
+        <AimIndicator hintLength={hintLength} />
         {rich && (
           <>
             <Particles />

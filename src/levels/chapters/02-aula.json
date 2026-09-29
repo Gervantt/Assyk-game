@@ -1,0 +1,102 @@
+{
+  "id": "aula",
+  "order": 2,
+  "title": {
+    "kk": "Аула",
+    "ru": "Двор",
+    "en": "The Yard"
+  },
+  "subtitle": {
+    "kk": "Кон кішірейді, лақтыру саны азайды.",
+    "ru": "Кон меньше, бросков меньше.",
+    "en": "Smaller kon, fewer throws."
+  },
+  "levels": [
+    {
+      "id": "aula-1",
+      "layout": {
+        "kind": "row",
+        "count": 4,
+        "shape": "square",
+        "fieldRadius": 1.1
+      },
+      "throws": 4,
+      "goal": 3,
+      "stars": [
+        3,
+        4
+      ]
+    },
+    {
+      "id": "aula-2",
+      "layout": {
+        "kind": "pyramid",
+        "count": 6,
+        "fieldRadius": 1.15
+      },
+      "throws": 5,
+      "goal": 4,
+      "stars": [
+        3,
+        4
+      ]
+    },
+    {
+      "id": "aula-3",
+      "layout": {
+        "kind": "circle",
+        "count": 6,
+        "fieldRadius": 1.2
+      },
+      "throws": 5,
+      "goal": 4,
+      "stars": [
+        3,
+        4
+      ]
+    },
+    {
+      "id": "aula-4",
+      "layout": {
+        "kind": "square",
+        "count": 4,
+        "shape": "square",
+        "fieldRadius": 1.0
+      },
+      "throws": 4,
+      "goal": 3,
+      "stars": [
+        2,
+        3
+      ]
+    },
+    {
+      "id": "aula-5",
+      "layout": {
+        "kind": "row",
+        "count": 6,
+        "fieldRadius": 1.3
+      },
+      "throws": 5,
+      "goal": 4,
+      "stars": [
+        3,
+        4
+      ]
+    },
+    {
+      "id": "aula-6",
+      "layout": {
+        "kind": "pyramid",
+        "count": 10,
+        "fieldRadius": 1.25
+      },
+      "throws": 6,
+      "goal": 6,
+      "stars": [
+        5,
+        6
+      ]
+    }
+  ]
+}

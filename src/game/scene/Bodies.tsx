@@ -1,7 +1,7 @@
 import { useLayoutEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { BODY_ASYK, BODY_SAKA, PHYSICS, type Frame, type WorldState } from '@/physics'
+import { BODY_ASYK, BODY_SAKA, BODY_STONE, PHYSICS, type Frame, type WorldState } from '@/physics'
 import { useAsykModel } from '@/game/assets/useAsykModel'
 import { FRAME_DT, getPlayback } from '@/game/playback'
 import { useGameStore } from '@/store/useGameStore'
@@ -58,6 +58,41 @@ function restPose(world: WorldState, out: Map<number, Pose>) {
     }
     out.set(b.id, { x: b.x, y: b.y, z: 0, angle: b.angle, side: b.side, visible: !b.removed })
   }
+}
+
+/** Камни-препятствия. Неподвижны, поэтому матрицы считаются один раз. */
+function Stones({ world }: { world: WorldState }) {
+  const stones = useMemo(() => world.bodies.filter((b) => b.kind === BODY_STONE), [world])
+  const ref = useRef<THREE.InstancedMesh>(null)
+
+  useLayoutEffect(() => {
+    const mesh = ref.current
+    if (!mesh || stones.length === 0) return
+    const dummy = new THREE.Object3D()
+    stones.forEach((b, i) => {
+      dummy.position.set(b.x, b.radius * 0.42, toSceneZ(b.y))
+      dummy.rotation.set(0, b.id * 1.1, 0)
+      dummy.scale.set(b.radius, b.radius * 0.78, b.radius)
+      dummy.updateMatrix()
+      mesh.setMatrixAt(i, dummy.matrix)
+    })
+    mesh.instanceMatrix.needsUpdate = true
+  }, [stones])
+
+  if (stones.length === 0) return null
+  return (
+    <instancedMesh
+      key={stones.length}
+      ref={ref}
+      args={[undefined, undefined, stones.length]}
+      castShadow
+      receiveShadow
+      frustumCulled={false}
+    >
+      <icosahedronGeometry args={[1, 1]} />
+      <meshStandardMaterial color="#6f6558" roughness={0.92} metalness={0.03} flatShading />
+    </instancedMesh>
+  )
 }
 
 /**
@@ -163,6 +198,8 @@ export function Bodies({ world }: { world: WorldState }) {
         <circleGeometry args={[PHYSICS.sakaRadius * 1.5, 20]} />
         <meshBasicMaterial color="#2b1d0c" transparent opacity={0.3} depthWrite={false} />
       </mesh>
+
+      <Stones world={world} />
     </group>
   )
 }

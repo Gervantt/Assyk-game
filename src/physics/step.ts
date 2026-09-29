@@ -1,7 +1,54 @@
 import { PHYSICS } from './config'
 import { fieldContains } from './field'
 import { length } from './math'
-import { BODY_ASYK, type SimEvent, type WorldState } from './types'
+import { BODY_ASYK, BODY_STONE, type Body, type SimEvent, type WorldState } from './types'
+
+/** Индекс тела с данным id. Тела создаются по порядку, поэтому обычно id === индекс. */
+function bodyById(state: WorldState, id: number): Body | undefined {
+  const direct = state.bodies[id]
+  if (direct && direct.id === id) return direct
+  return state.bodies.find((b) => b.id === id)
+}
+
+function moverIndex(state: WorldState, id: number): number {
+  for (let i = 0; i < state.movers.length; i++) if (state.movers[i]!.bodyId === id) return i
+  return -1
+}
+
+/**
+ * Колеблющиеся асыки. Треугольная волна считается из номера тика:
+ * целочисленный остаток и арифметика — значит побитово одинаково везде.
+ */
+function applyMovers(state: WorldState): void {
+  const dt = PHYSICS.dt
+  for (const m of state.movers) {
+    const b = bodyById(state, m.bodyId)
+    if (!b || b.removed) continue
+    const phase = (state.tick % m.period) / m.period
+    const tri = phase < 0.5 ? phase * 4 - 1 : 3 - phase * 4
+    const offset = m.amplitude * tri
+    const tx = m.axis === 0 ? m.baseX + offset : m.baseX
+    const ty = m.axis === 1 ? m.baseY + offset : m.baseY
+    // скорость нужна, чтобы столкновение учитывало движение асыка
+    b.vx = (tx - b.x) / dt
+    b.vy = (ty - b.y) / dt
+    b.x = tx
+    b.y = ty
+  }
+}
+
+/** Обратная масса: у камня и у ещё не задетого колеблющегося асыка она нулевая. */
+function inverseMass(state: WorldState, b: Body): number {
+  if (b.kind === BODY_STONE) return 0
+  if (moverIndex(state, b.id) >= 0) return 0
+  return 1 / b.mass
+}
+
+/** Задетый колеблющийся асық срывается и дальше живёт обычной физикой. */
+function release(state: WorldState, b: Body): void {
+  const i = moverIndex(state, b.id)
+  if (i >= 0) state.movers.splice(i, 1)
+}
 
 /**
  * Один фиксированный шаг симуляции 1/120 с.
@@ -13,13 +60,22 @@ export function stepWorld(state: WorldState, events: SimEvent[]): void {
   const bodies = state.bodies
   state.tick++
 
-  // --- 1. трение качения и интегрирование ---
+  applyMovers(state)
+
+  // --- 1. ветер, трение качения и интегрирование ---
   const drop = PHYSICS.friction * dt
   for (let i = 0; i < bodies.length; i++) {
     const b = bodies[i]!
-    if (b.removed) continue
-    const sp = length(b.vx, b.vy)
-    if (sp > 0) {
+    if (b.removed || b.kind === BODY_STONE) continue
+    if (moverIndex(state, b.id) >= 0) continue
+
+    const moving = b.vx !== 0 || b.vy !== 0
+    if (moving) {
+      // наклон поля действует только на катящееся тело: лежащее держит трение покоя
+      b.vx = b.vx + state.windX * dt
+      b.vy = b.vy + state.windY * dt
+
+      const sp = length(b.vx, b.vy)
       if (sp - drop <= PHYSICS.restEps) {
         b.vx = 0
         b.vy = 0
@@ -31,6 +87,7 @@ export function stepWorld(state: WorldState, events: SimEvent[]): void {
         b.y = b.y + b.vy * dt
       }
     }
+
     // визуальное вращение
     b.angle = b.angle + b.spin * dt
     const damp = 1 - PHYSICS.spinDamping * dt
@@ -52,6 +109,15 @@ export function stepWorld(state: WorldState, events: SimEvent[]): void {
       const d2 = dx * dx + dy * dy
       if (d2 >= rsum * rsum) continue
 
+      // контакт срывает колеблющийся асық с траектории
+      release(state, a)
+      release(state, b)
+
+      const invA = inverseMass(state, a)
+      const invB = inverseMass(state, b)
+      const invSum = invA + invB
+      if (invSum <= 0) continue
+
       let nx = 1
       let ny = 0
       let dist = 0
@@ -62,9 +128,6 @@ export function stepWorld(state: WorldState, events: SimEvent[]): void {
       }
 
       // расталкивание пропорционально обратной массе
-      const invA = 1 / a.mass
-      const invB = 1 / b.mass
-      const invSum = invA + invB
       const overlap = rsum - dist
       a.x = a.x - nx * overlap * (invA / invSum)
       a.y = a.y - ny * overlap * (invA / invSum)
@@ -104,7 +167,7 @@ export function stepWorld(state: WorldState, events: SimEvent[]): void {
   const hh = state.bounds.halfHeight
   for (let i = 0; i < bodies.length; i++) {
     const b = bodies[i]!
-    if (b.removed) continue
+    if (b.removed || b.kind === BODY_STONE) continue
     if (state.bounds.bounce) {
       if (b.x - b.radius < -hw && b.vx < 0) {
         b.x = -hw + b.radius
@@ -128,6 +191,7 @@ export function stepWorld(state: WorldState, events: SimEvent[]): void {
       const ax = b.x < 0 ? -b.x : b.x
       const ay = b.y < 0 ? -b.y : b.y
       if (ax > hw || ay > hh) {
+        release(state, b)
         b.removed = true
         b.vx = 0
         b.vy = 0
@@ -147,11 +211,15 @@ export function stepWorld(state: WorldState, events: SimEvent[]): void {
   }
 }
 
-/** Все тела остановились или удалены. */
+/**
+ * Все тела остановились или удалены. Камни неподвижны по определению,
+ * а колеблющиеся асыки не считаются: иначе симуляция не завершилась бы никогда.
+ */
 export function isSettled(state: WorldState): boolean {
   for (let i = 0; i < state.bodies.length; i++) {
     const b = state.bodies[i]!
-    if (b.removed) continue
+    if (b.removed || b.kind === BODY_STONE) continue
+    if (moverIndex(state, b.id) >= 0) continue
     if (b.vx !== 0 || b.vy !== 0) return false
   }
   return true

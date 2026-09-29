@@ -1,16 +1,20 @@
 import { create } from 'zustand'
-import type { ThrowInput } from '@/physics'
+import { BODY_ASYK, type LayoutSpec, type ThrowInput } from '@/physics'
 import {
   applyThrow,
   createMatch,
-  restartMatch,
+  starsFor,
   type MatchMode,
   type MatchState,
+  type RulesConfig,
   type ThrowSummary,
+  type WorldExtras,
 } from '@/game/rules'
+import { rulesFor, worldExtrasFor, type CampaignLevel } from '@/levels'
 import { beginPlayback, stopPlayback } from '@/game/playback'
 import { freshSeed } from '@/lib/format'
 import { saveBest } from '@/lib/storage'
+import { saveLevelResult } from '@/lib/progress'
 import { translate, useI18n } from '@/i18n'
 import type { DictKey } from '@/i18n'
 import { fullEffects } from '@/store/useSettings'
@@ -18,7 +22,6 @@ import { playSound, unlockAudio } from '@/audio'
 import { HAPTIC, vibrate } from '@/lib/haptics'
 import { resetShake } from '@/game/fx/shake'
 
-/** Фазы кадра игры. */
 export type Phase = 'aim' | 'animating' | 'finished'
 
 export interface Toast {
@@ -29,9 +32,22 @@ export interface Toast {
 
 export type CameraMode = 'player' | 'top'
 
+/** Всё, что задаёт партию: режим, поле, правила и ограничения. */
+export interface SessionConfig {
+  mode: MatchMode
+  layout: LayoutSpec
+  rules?: Partial<RulesConfig>
+  world?: WorldExtras
+  playerNames?: string[]
+  /** ограничение силы броска, 0..1 */
+  maxPower?: number
+  /** уровень кампании, если это испытание */
+  level?: CampaignLevel
+}
+
 interface GameStore {
+  session: SessionConfig | null
   match: MatchState | null
-  /** состояние, которое станет активным после проигрывания кадров */
   pending: MatchState | null
   phase: Phase
   lastSummary: ThrowSummary | null
@@ -39,8 +55,12 @@ interface GameStore {
   camera: CameraMode
   newRecord: boolean
   celebrate: boolean
+  /** звёзды за пройденный уровень; null — уровень не пройден */
+  levelStars: 1 | 2 | 3 | null
 
+  startSession: (config: SessionConfig) => void
   start: (mode: MatchMode) => void
+  startLevel: (level: CampaignLevel) => void
   restart: () => void
   leave: () => void
   throwSaka: (input: ThrowInput) => void
@@ -52,7 +72,7 @@ interface GameStore {
 
 let toastId = 0
 
-function playerNames(mode: MatchMode): string[] {
+function defaultNames(mode: MatchMode): string[] {
   const locale = useI18n.getState().locale
   return mode === 'hotseat'
     ? [translate(locale, 'player.one'), translate(locale, 'player.two')]
@@ -66,40 +86,55 @@ const FRESH = {
   toasts: [] as Toast[],
   newRecord: false,
   celebrate: false,
+  levelStars: null,
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
+  session: null,
   match: null,
   camera: 'player',
   ...FRESH,
 
-  start: (mode) => {
+  startSession: (config) => {
     stopPlayback()
     resetShake()
     set({
+      session: config,
       match: createMatch({
-        mode,
+        mode: config.mode,
         seed: freshSeed(),
-        layout: { kind: 'row', count: 5 },
-        playerNames: playerNames(mode),
+        layout: config.layout,
+        playerNames: config.playerNames ?? defaultNames(config.mode),
+        rules: config.rules,
+        world: config.world,
       }),
       ...FRESH,
     })
   },
 
+  start: (mode) => get().startSession({ mode, layout: { kind: 'row', count: 5 } }),
+
+  startLevel: (level) =>
+    get().startSession({
+      mode: 'campaign',
+      layout: { ...level.layout },
+      rules: rulesFor(level),
+      world: worldExtrasFor(level),
+      maxPower: level.maxPower,
+      level,
+    }),
+
   restart: () => {
-    const m = get().match
-    if (!m) return
-    stopPlayback()
-    resetShake()
+    const s = get().session
+    if (!s) return
     playSound('tap')
-    set({ match: restartMatch(m, freshSeed()), ...FRESH })
+    get().startSession(s)
   },
 
   leave: () => {
     stopPlayback()
     resetShake()
-    set({ match: null, ...FRESH })
+    set({ session: null, match: null, ...FRESH })
   },
 
   throwSaka: (input) => {
@@ -116,13 +151,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   finishPlayback: () => {
-    const { pending } = get()
+    const { pending, session } = get()
     if (!pending) return
     stopPlayback()
 
     const summary = get().lastSummary
-    // надписи, набранные во время броска («Қос!», «+1»), не сбрасываем —
-    // иначе крупный текст комбо обрывался бы ровно в момент остановки тел
     const toasts: Toast[] = [...get().toasts]
     if (summary) {
       if (summary.points === 0 && !summary.sakaLost) {
@@ -136,20 +169,33 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }
     }
 
-    let newRecord = false
     const finished = pending.status === 'finished'
+    const player = pending.players[0]!
+    let newRecord = false
+    let levelStars: 1 | 2 | 3 | null = null
+
     if (finished && pending.mode === 'training') {
-      const p = pending.players[0]!
       newRecord = saveBest('training', {
-        score: p.score,
-        accuracy: p.throwsUsed === 0 ? 0 : p.hits / p.throwsUsed,
-        bestThrow: p.bestThrow,
-        bestStreak: p.bestStreak,
+        score: player.score,
+        accuracy: player.throwsUsed === 0 ? 0 : player.hits / player.throwsUsed,
+        bestThrow: player.bestThrow,
+        bestStreak: player.bestStreak,
       })
     }
+
+    if (finished && pending.mode === 'campaign' && session?.level) {
+      // цель достигнута, только если матч закончился до исчерпания бросков
+      if (objectiveDone(pending)) {
+        const stars = starsFor(player.throwsUsed, session.level.stars)
+        levelStars = stars
+        newRecord = saveLevelResult(session.level.id, stars, player.throwsUsed)
+      }
+    }
+
     if (finished) {
-      playSound('win', { volume: 0.8 })
-      vibrate(HAPTIC.win)
+      const won = pending.mode !== 'campaign' || levelStars !== null
+      playSound(won ? 'win' : 'penalty', { volume: 0.8 })
+      if (won) vibrate(HAPTIC.win)
     }
 
     set({
@@ -158,7 +204,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       phase: finished ? 'finished' : 'aim',
       toasts,
       newRecord,
-      celebrate: finished,
+      levelStars,
+      celebrate: finished && levelStars !== null,
     })
   },
 
@@ -171,3 +218,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 }))
+
+/** Цель уровня выполнена? Считаем по выбитым асыкам, а не по очкам. */
+function objectiveDone(match: MatchState): boolean {
+  const goal = match.rules.goal
+  if (goal <= 0) return true
+  return match.world.bodies.filter((b) => b.kind === BODY_ASYK && b.outOfField).length >= goal
+}

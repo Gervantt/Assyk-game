@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { aimFromAngle, aimFromPull, makeThrow, type WorldState } from '@/physics'
+import { aimFromAngle, aimFromPull, makeThrow, type AimState, type WorldState } from '@/physics'
 import { useAimStore } from '@/store/useAimStore'
 import { useGameStore } from '@/store/useGameStore'
 
@@ -18,7 +18,19 @@ function maxPullPx(): number {
  * Направление = противоположно вектору тяги, сила = длина тяги.
  * Работает мышью и касанием через Pointer Events.
  */
-export function AimLayer({ world, enabled }: { world: WorldState; enabled: boolean }) {
+export interface AimLayerProps {
+  world: WorldState
+  enabled: boolean
+  /** ограничение силы уровня, 0..1 */
+  maxPower?: number
+  /**
+   * Обучение может не пропустить бросок: вернуть false, чтобы отменить его
+   * и подсказать, что поправить. В обычной игре не задаётся.
+   */
+  gate?: (aim: AimState) => boolean
+}
+
+export function AimLayer({ world, enabled, maxPower = 1, gate }: AimLayerProps) {
   const startRef = useRef<{ x: number; y: number; id: number } | null>(null)
   const throwSaka = useGameStore((s) => s.throwSaka)
 
@@ -35,12 +47,12 @@ export function AimLayer({ world, enabled }: { world: WorldState; enabled: boole
 
   const release = useCallback(() => {
     const aim = useAimStore.getState()
-    if (aim.active && aim.power > 0) {
-      throwSaka(makeThrow(aim, { x: aim.originX, y: aim.originY }))
+    if (aim.active && aim.power > 0 && (!gate || gate(aim))) {
+      throwSaka(makeThrow(aim, { x: aim.originX, y: aim.originY }, maxPower))
     }
     useAimStore.getState().reset()
     startRef.current = null
-  }, [throwSaka])
+  }, [throwSaka, maxPower, gate])
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!enabled) return
@@ -104,7 +116,7 @@ export function AimLayer({ world, enabled }: { world: WorldState; enabled: boole
         keys.current.space = false
         if (power.current > 0) {
           const aim = aimFromAngle(angle.current, power.current)
-          throwSaka(makeThrow(aim, origin))
+          if (!gate || gate(aim)) throwSaka(makeThrow(aim, origin, maxPower))
           power.current = 0
           useAimStore.getState().reset()
         }
@@ -118,7 +130,7 @@ export function AimLayer({ world, enabled }: { world: WorldState; enabled: boole
       window.removeEventListener('keydown', down)
       window.removeEventListener('keyup', up)
     }
-  }, [enabled, origin.x, origin.y, throwSaka])
+  }, [enabled, origin.x, origin.y, throwSaka, maxPower, gate])
 
   return (
     <div
