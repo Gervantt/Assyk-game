@@ -15,6 +15,8 @@ export const RULES_BY_MODE: Record<MatchMode, RulesConfig> = {
   hotseat: { ...DEFAULT_RULES, throwsPerPlayer: 5, extraThrowOnKnockOut: true, comboBonus: false },
   /** Кампания: бюджет бросков фиксирован, каждый бросок на счету. */
   campaign: { ...DEFAULT_RULES, throwsPerPlayer: 3, extraThrowOnKnockOut: false, comboBonus: false },
+  /** Ежедневное испытание: те же правила, что в кампании, одна зачётная попытка. */
+  daily: { ...DEFAULT_RULES, throwsPerPlayer: 5, extraThrowOnKnockOut: false, comboBonus: false },
   /** Обучение: провалить нельзя — бросков сколько угодно, штрафов нет. */
   tutorial: {
     ...DEFAULT_RULES,

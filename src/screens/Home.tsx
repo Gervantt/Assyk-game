@@ -6,6 +6,7 @@ import { loadBest } from '@/lib/storage'
 import { loadProgress, nextUnfinished, totalStars, tutorialDone } from '@/lib/progress'
 import { CAMPAIGN } from '@/levels'
 import { Stars } from '@/components/Stars'
+import { BackendBanner } from '@/components/BackendBanner'
 import { percent } from '@/lib/format'
 import type { DictKey } from '@/i18n'
 
@@ -45,10 +46,12 @@ export function Home() {
         { to: '/tutorial', title: 'mode.tutorial', desc: 'mode.tutorial.desc', primary: true },
         { to: '/campaign', title: 'mode.campaign', desc: 'mode.campaign.desc' },
         { to: '/play/training', title: 'mode.training', desc: 'mode.training.desc' },
+        { to: '/daily', title: 'mode.daily', desc: 'mode.daily.desc' },
         { to: '/play/hotseat', title: 'mode.hotseat', desc: 'mode.hotseat.desc' },
       ]
     : [
         { to: `/campaign/${nextUnfinished(progress).id}`, title: 'mode.campaign', desc: 'mode.campaign.desc', primary: true },
+        { to: '/daily', title: 'mode.daily', desc: 'mode.daily.desc' },
         { to: '/play/training', title: 'mode.training', desc: 'mode.training.desc' },
         { to: '/play/hotseat', title: 'mode.hotseat', desc: 'mode.hotseat.desc' },
         { to: '/tutorial', title: 'mode.tutorial', desc: 'mode.tutorial.desc' },
@@ -75,6 +78,8 @@ export function Home() {
           <p className="mt-1 text-sm text-steppe-300">{t('app.subtitle')}</p>
         </header>
 
+        <BackendBanner />
+
         <nav className="flex flex-col gap-3">
           {modes.map((m) => (
             <ModeCard
@@ -88,6 +93,7 @@ export function Home() {
           <div className="flex gap-3">
             {(
               [
+                { to: '/profile', key: 'mode.profile' },
                 { to: '/rules', key: 'mode.rules' },
                 { to: '/settings', key: 'mode.settings' },
               ] as const

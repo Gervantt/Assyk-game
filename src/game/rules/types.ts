@@ -2,7 +2,7 @@ import type { LayoutSpec, SimResult, ThrowInput, WorldState } from '@/physics'
 import type { HintKey } from './hints'
 import type { WorldExtras } from './match'
 
-export type MatchMode = 'training' | 'hotseat' | 'campaign' | 'tutorial'
+export type MatchMode = 'training' | 'hotseat' | 'campaign' | 'tutorial' | 'daily'
 
 /** Вариативные правила. В частном матче их можно переключать. */
 export interface RulesConfig {

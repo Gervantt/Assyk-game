@@ -11,6 +11,11 @@ import {
   type WorldExtras,
 } from '@/game/rules'
 import { rulesFor, worldExtrasFor, type CampaignLevel } from '@/levels'
+import type { DailyLevel } from '@/levels/daily'
+import { knockedOutCount } from '@/game/rules'
+import { activeUserId } from '@/store/useAuthStore'
+import { pushProgress, recordResult } from '@/net/sync'
+import { saveDaily, saveLocalDaily } from '@/net/daily'
 import { beginPlayback, stopPlayback } from '@/game/playback'
 import { freshSeed } from '@/lib/format'
 import { saveBest } from '@/lib/storage'
@@ -43,6 +48,8 @@ export interface SessionConfig {
   maxPower?: number
   /** уровень кампании, если это испытание */
   level?: CampaignLevel
+  /** ежедневное испытание */
+  daily?: DailyLevel
 }
 
 interface GameStore {
@@ -61,6 +68,7 @@ interface GameStore {
   startSession: (config: SessionConfig) => void
   start: (mode: MatchMode) => void
   startLevel: (level: CampaignLevel) => void
+  startDaily: (level: DailyLevel) => void
   restart: () => void
   leave: () => void
   throwSaka: (input: ThrowInput) => void
@@ -122,6 +130,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
       world: worldExtrasFor(level),
       maxPower: level.maxPower,
       level,
+    }),
+
+  startDaily: (level) =>
+    get().startSession({
+      mode: 'daily',
+      layout: { ...level.layout },
+      rules: rulesFor(level),
+      world: worldExtrasFor(level),
+      maxPower: level.maxPower,
+      daily: level,
     }),
 
   restart: () => {
@@ -196,6 +214,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const won = pending.mode !== 'campaign' || levelStars !== null
       playSound(won ? 'win' : 'penalty', { volume: 0.8 })
       if (won) vibrate(HAPTIC.win)
+      // отправка в облако не должна задерживать показ итогов
+      void syncFinished(pending, session, levelStars)
     }
 
     set({
@@ -218,6 +238,65 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 }))
+
+/**
+ * Фоновая отправка итогов: история, прогресс кампании, результат дня.
+ * Ошибки сети сюда не пробрасываются — игра уже показала итоги.
+ */
+async function syncFinished(
+  match: MatchState,
+  session: SessionConfig | null,
+  stars: 1 | 2 | 3 | null,
+): Promise<void> {
+  const userId = activeUserId()
+  const player = match.players[0]!
+  const accuracy = player.throwsUsed === 0 ? 0 : player.hits / player.throwsUsed
+  const knocked = knockedOutCount(match.world)
+
+  if (match.mode === 'daily' && session?.daily) {
+    saveLocalDaily({
+      date: session.daily.date,
+      score: knocked,
+      throws: player.throwsUsed,
+      accuracy,
+    })
+    if (userId) {
+      await saveDaily(session.daily.date, knocked, player.throwsUsed, accuracy)
+      await recordResult(userId, {
+        mode: 'daily',
+        levelId: session.daily.id,
+        score: knocked,
+        throws: player.throwsUsed,
+        accuracy,
+      })
+    }
+    return
+  }
+
+  if (!userId) return
+
+  if (match.mode === 'campaign' && session?.level) {
+    await recordResult(userId, {
+      mode: 'campaign',
+      levelId: session.level.id,
+      score: knocked,
+      throws: player.throwsUsed,
+      accuracy,
+      stars,
+    })
+    if (stars !== null) await pushProgress({ [session.level.id]: { stars, bestThrows: player.throwsUsed } })
+    return
+  }
+
+  if (match.mode === 'training') {
+    await recordResult(userId, {
+      mode: 'training',
+      score: player.score,
+      throws: player.throwsUsed,
+      accuracy,
+    })
+  }
+}
 
 /** Цель уровня выполнена? Считаем по выбитым асыкам, а не по очкам. */
 function objectiveDone(match: MatchState): boolean {

@@ -6,6 +6,8 @@ import { Settings } from '@/screens/Settings'
 import { Campaign } from '@/screens/Campaign'
 import { LevelPlay } from '@/screens/LevelPlay'
 import { Tutorial } from '@/screens/Tutorial'
+import { Daily } from '@/screens/Daily'
+import { Profile } from '@/screens/Profile'
 
 export function App() {
   return (
@@ -15,6 +17,8 @@ export function App() {
       <Route path="/tutorial" element={<Tutorial />} />
       <Route path="/campaign" element={<Campaign />} />
       <Route path="/campaign/:levelId" element={<LevelPlay />} />
+      <Route path="/daily" element={<Daily />} />
+      <Route path="/profile" element={<Profile />} />
       <Route path="/rules" element={<Rules />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="*" element={<Navigate to="/" replace />} />

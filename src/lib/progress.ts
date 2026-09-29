@@ -35,6 +35,35 @@ export function saveLevelResult(levelId: string, stars: 1 | 2 | 3, throws: numbe
 }
 
 /**
+ * Сводит серверный прогресс с локальным по лучшему результату и сохраняет.
+ * Нужен при входе в аккаунт: прогресс гостя и прогресс с другого устройства
+ * должны сложиться, а не затереть друг друга.
+ */
+export function mergeProgress(remote: ProgressMap): ProgressMap {
+  const local = loadProgress()
+  const merged: ProgressMap = { ...local }
+
+  for (const [levelId, r] of Object.entries(remote)) {
+    const l = merged[levelId]
+    if (!l) {
+      merged[levelId] = r
+      continue
+    }
+    merged[levelId] = {
+      stars: Math.max(l.stars, r.stars) as 1 | 2 | 3,
+      bestThrows: Math.min(l.bestThrows, r.bestThrows),
+    }
+  }
+
+  try {
+    localStorage.setItem(KEY, JSON.stringify(merged))
+  } catch {
+    /* хранилище недоступно — сведённый прогресс живёт только в этой вкладке */
+  }
+  return merged
+}
+
+/**
  * Уровень открыт, если пройден предыдущий. Первый открыт всегда,
  * чтобы игра начиналась сразу.
  */
