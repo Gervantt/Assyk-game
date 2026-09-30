@@ -26,6 +26,7 @@ import { reducedMotion, richEffects } from '@/store/useSettings'
 import { playSound, unlockAudio } from '@/audio'
 import { HAPTIC, vibrate } from '@/lib/haptics'
 import { resetShake } from '@/game/fx/shake'
+import { awardCoins } from '@/net/shop'
 
 export type Phase = 'aim' | 'animating' | 'finished'
 
@@ -285,6 +286,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
       if (won) vibrate(HAPTIC.win)
       // отправка в облако не должна задерживать показ итогов
       void syncFinished(pending, session, levelStars)
+      // Тиыны за игру. Сумму всё равно проверяет и ограничивает сервер:
+      // в браузере это число подменили бы.
+      if (won && pending.mode !== 'tutorial') {
+        const earned = player.score * 5 + (levelStars ?? 0) * 10
+        if (earned > 0) void awardCoins(earned, pending.mode)
+      }
     }
 
     set({

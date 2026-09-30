@@ -18,3 +18,23 @@ createRoot(document.getElementById('root')!).render(
     </BrowserRouter>
   </StrictMode>,
 )
+
+// Экран загрузки в index.html убираем только после первой отрисовки:
+// иначе между «шторкой» и готовым интерфейсом мелькает белое окно.
+requestAnimationFrame(() => {
+  requestAnimationFrame(() => {
+    const boot = document.getElementById('boot')
+    if (!boot) return
+    boot.classList.add('done')
+    window.setTimeout(() => boot.remove(), 400)
+  })
+})
+
+// PWA: только в сборке. В dev сервис-воркер мешает горячей перезагрузке.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    void navigator.serviceWorker.register('/sw.js').catch(() => {
+      /* установка PWA не обязательна — игра работает и без неё */
+    })
+  })
+}

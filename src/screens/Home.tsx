@@ -133,6 +133,7 @@ export function Home() {
               [
                 { to: '/custom', key: 'custom.title' },
                 { to: '/league', key: 'league.title' },
+                { to: '/shop', key: 'shop.title' },
               ] as const
             ).map((item) => (
               <Link
@@ -148,6 +149,7 @@ export function Home() {
           <div className="flex gap-3">
             {(
               [
+                { to: '/tournaments', key: 'tour.title' },
                 { to: '/profile', key: 'mode.profile' },
                 { to: '/rules', key: 'mode.rules' },
                 { to: '/settings', key: 'mode.settings' },

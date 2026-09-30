@@ -50,3 +50,8 @@ echo
 echo "== рейтинг, лига и испытания =="
 run -d asyq -f supabase/tests/03-ranked.sql 2>&1 |
   grep -vE '^$|^SET$|^RESET$|Pager|INSERT 0|^UPDATE|^DO$' | sed 's/^ //'
+
+echo
+echo "== магазин и турниры =="
+run -d asyq -f supabase/tests/04-shop-tournament.sql 2>&1 |
+  grep -vE '^$|^SET$|^RESET$|Pager|INSERT 0|^UPDATE|^DO$' | sed 's/^ //'

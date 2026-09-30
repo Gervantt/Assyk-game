@@ -1,0 +1,22 @@
+{
+  "name": "Asyq League — Асық ату",
+  "short_name": "Asyq League",
+  "description": "Современная цифровая версия казахской игры «Асық ату». Прицелься. Бросай. Выбивай.",
+  "lang": "kk",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0d1017",
+  "theme_color": "#0d1017",
+  "categories": ["games", "sports"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Ежедневное испытание", "url": "/daily" },
+    { "name": "Кампания", "url": "/campaign" }
+  ]
+}

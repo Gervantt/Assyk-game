@@ -6,12 +6,68 @@
     <meta name="theme-color" content="#0d1017" />
     <title>Asyq League — Асық ату</title>
     <meta name="description" content="Asyq League — современная цифровая версия казахской игры «Асық ату». Прицелься. Бросай. Выбивай." />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Asyq League" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Asyq League" />
+    <meta property="og:title" content="Asyq League — Асық ату" />
+    <meta property="og:description" content="Современная цифровая версия казахской игры «Асық ату». Прицелься. Бросай. Выбивай." />
+    <meta property="og:image" content="/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Asyq League — Асық ату" />
+    <meta name="twitter:description" content="Прицелься. Бросай. Выбивай." />
+    <meta name="twitter:image" content="/og.png" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;800&display=swap" rel="stylesheet" />
   </head>
   <body>
     <div id="root"></div>
+    <div id="boot">
+      <div class="boot-ring"></div>
+      <p class="boot-title">Asyq League</p>
+      <p class="boot-sub">Асық ату</p>
+      <div class="boot-bar"><i></i></div>
+    </div>
+    <style>
+      #boot {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        background: radial-gradient(120% 70% at 50% -10%, #1d2a3d 0%, #0d1017 60%);
+        color: #f3efe6;
+        font-family: 'Noto Sans', system-ui, sans-serif;
+        z-index: 50;
+        transition: opacity 0.35s ease;
+      }
+      #boot.done { opacity: 0; pointer-events: none; }
+      .boot-ring {
+        width: 84px; height: 84px; border-radius: 50%;
+        border: 3px dashed rgba(242, 193, 78, 0.65);
+        animation: boot-spin 5.5s linear infinite;
+      }
+      .boot-title { margin: 14px 0 0; font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+      .boot-sub { margin: 0; font-size: 14px; color: #f2c14e; }
+      .boot-bar { width: 168px; height: 4px; border-radius: 4px; background: rgba(255,255,255,0.12); overflow: hidden; }
+      .boot-bar i { display: block; height: 100%; width: 40%; border-radius: 4px; background: #f2c14e; animation: boot-slide 1.15s ease-in-out infinite; }
+      @keyframes boot-spin { to { transform: rotate(360deg); } }
+      @keyframes boot-slide { 0% { transform: translateX(-110%); } 100% { transform: translateX(310%); } }
+      @media (prefers-reduced-motion: reduce) {
+        .boot-ring, .boot-bar i { animation: none; }
+      }
+    </style>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

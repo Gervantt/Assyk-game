@@ -3,11 +3,13 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { BODY_ASYK, BODY_SAKA, BODY_STONE, PHYSICS, type Frame, type WorldState } from '@/physics'
 import { useAsykModel } from '@/game/assets/useAsykModel'
+import { useSakaLook } from '@/store/useShopStore'
 import { FRAME_DT, getPlayback } from '@/game/playback'
 import { useGameStore } from '@/store/useGameStore'
 import { toSceneZ } from './coords'
 
 const ASYK_COLOR = '#efe3c6'
+/** Запасной цвет сақа, если скин почему-то не прочитался. */
 const SAKA_COLOR = '#c33a25'
 /** Длина модели относительно радиуса коллайдера. */
 const VISUAL_SCALE = 2.45
@@ -107,6 +109,7 @@ function Stones({ world }: { world: WorldState }) {
  */
 export function Bodies({ world }: { world: WorldState }) {
   const { geometry, map } = useAsykModel()
+  const saka = useSakaLook()
   const asyks = useMemo(() => world.bodies.filter((b) => b.kind === BODY_ASYK), [world])
   const sides = useMemo(() => new Map(world.bodies.map((b) => [b.id, b.side])), [world])
 
@@ -190,12 +193,14 @@ export function Bodies({ world }: { world: WorldState }) {
       </instancedMesh>
 
       <mesh ref={sakaRef} geometry={geometry} castShadow receiveShadow frustumCulled={false}>
+        {/* Скин меняет ТОЛЬКО материал. Радиус, масса и всё остальное,
+            что влияет на полёт, заданы в src/physics и от скина не зависят. */}
         <meshStandardMaterial
           map={map}
-          color={SAKA_COLOR}
-          roughness={0.34}
-          metalness={0.3}
-          emissive={SAKA_COLOR}
+          color={saka.color ?? SAKA_COLOR}
+          roughness={saka.roughness}
+          metalness={saka.metalness}
+          emissive={saka.emissive}
           emissiveIntensity={0.12}
         />
       </mesh>

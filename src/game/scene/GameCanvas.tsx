@@ -7,6 +7,7 @@ import { FieldMarks } from './FieldMarks'
 import { Ground } from './Ground'
 import { AimIndicator, type PreviewMode } from './AimIndicator'
 import { PlaybackDriver } from './PlaybackDriver'
+import { useArenaLook } from '@/store/useShopStore'
 import { ProjectionBridge } from './ProjectionBridge'
 import { SteppeEnvironment } from './SteppeEnvironment'
 import { Particles } from '@/game/fx/Particles'
@@ -30,6 +31,7 @@ export function GameCanvas({
   const level = useSettings((s) => s.effects)
   const rich = level !== 'low'
   const full = level === 'full'
+  const arena = useArenaLook()
 
   return (
     <Canvas
@@ -50,13 +52,15 @@ export function GameCanvas({
       <PlaybackDriver world={world} />
       <ProjectionBridge />
 
-      <fog attach="fog" args={['#c7b48d', 16, 34]} />
+      {/* Арена задаёт цвет дымки и солнца. Это оформление: ни дальность
+          полёта, ни трение от выбранной арены не меняются. */}
+      <fog attach="fog" args={[arena.ground, 16 - arena.haze * 4, 34 - arena.haze * 6]} />
 
-      <hemisphereLight args={['#bcd4ea', '#2e2212', 0.22]} />
+      <hemisphereLight args={[arena.sky, '#2e2212', 0.22]} />
       {/* солнце низко: при высоком солнце тень короче самого асыка и не видна */}
       <directionalLight
         position={[4.6, 3.9, 3.1]}
-        color="#fff1d4"
+        color={arena.sun}
         intensity={full ? 2.0 : 2.2}
         castShadow={rich}
         shadow-mapSize={full ? [2048, 2048] : [1024, 1024]}

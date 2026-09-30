@@ -14,6 +14,10 @@ import { League } from '@/screens/League'
 import { Editor } from '@/screens/Editor'
 import { CustomFeed } from '@/screens/CustomFeed'
 import { CustomPlay } from '@/screens/CustomPlay'
+import { Shop } from '@/screens/Shop'
+import { Pro } from '@/screens/Pro'
+import { Tournaments } from '@/screens/Tournaments'
+import { Tournament } from '@/screens/Tournament'
 
 export function App() {
   return (
@@ -31,6 +35,10 @@ export function App() {
       <Route path="/editor" element={<Editor />} />
       <Route path="/custom" element={<CustomFeed />} />
       <Route path="/c/:levelId" element={<CustomPlay />} />
+      <Route path="/shop" element={<Shop />} />
+      <Route path="/pro" element={<Pro />} />
+      <Route path="/tournaments" element={<Tournaments />} />
+      <Route path="/t/:tournamentId" element={<Tournament />} />
       <Route path="/rules" element={<Rules />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="*" element={<Navigate to="/" replace />} />

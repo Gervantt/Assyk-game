@@ -4,12 +4,14 @@ import * as THREE from 'three'
 import { PHYSICS } from '@/physics'
 import { currentFrameIndex, getPlayback } from '@/game/playback'
 import { useGameStore } from '@/store/useGameStore'
+import { useTrailLook } from '@/store/useShopStore'
 import { toSceneZ } from '@/game/scene/coords'
 
 const SEGMENTS = 16
 
 /** След за сақа в полёте: кольцевой буфер последних позиций. */
 export function Trail() {
+  const trail = useTrailLook()
   const meshRef = useRef<THREE.InstancedMesh>(null)
   const buffer = useMemo(
     () => Array.from({ length: SEGMENTS }, () => new THREE.Vector3(0, -99, 0)),
@@ -39,7 +41,8 @@ export function Trail() {
       const v = buffer[idx]!
       const k = 1 - i / SEGMENTS
       dummy.position.copy(v)
-      dummy.scale.setScalar(PHYSICS.sakaRadius * 0.85 * k * k)
+      // ширина следа — часть скина: на траекторию она не влияет
+      dummy.scale.setScalar(PHYSICS.sakaRadius * 0.85 * trail.width * k * k)
       dummy.updateMatrix()
       mesh.setMatrixAt(i, dummy.matrix)
     }
@@ -49,7 +52,13 @@ export function Trail() {
   return (
     <instancedMesh ref={meshRef} args={[undefined, undefined, SEGMENTS]} frustumCulled={false}>
       <icosahedronGeometry args={[1, 0]} />
-      <meshBasicMaterial color="#ffb38a" transparent opacity={0.4} depthWrite={false} toneMapped={false} />
+      <meshBasicMaterial
+        color={trail.color}
+        transparent
+        opacity={0.4}
+        depthWrite={false}
+        toneMapped={false}
+      />
     </instancedMesh>
   )
 }
