@@ -12,3 +12,4 @@ coverage
 
 # артефакт инкрементальной сборки TypeScript
 *.tsbuildinfo
+.env*

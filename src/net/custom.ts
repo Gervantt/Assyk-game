@@ -1,3 +1,4 @@
+import { currentUserId } from './auth'
 import { backendReady, netWarn, supabase } from './supabase'
 
 /** Раскладка пользовательского испытания. Хранится в custom_levels.layout. */
@@ -44,9 +45,13 @@ export async function saveCustomLevel(
   layout: CustomLayout,
 ): Promise<string | null> {
   if (!backendReady() || !supabase) return null
+  // author_id обязателен: политика custom_levels_insert_own проверяет
+  // author_id = auth.uid(), и без него вставка отлетает с 403.
+  const author = await currentUserId()
+  if (!author) return null
   const { data, error } = await supabase
     .from('custom_levels')
-    .insert({ title, layout })
+    .insert({ title, layout, author_id: author })
     .select('id')
     .single()
   if (error) {

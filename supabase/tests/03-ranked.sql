@@ -130,6 +130,15 @@ select '19. лента отдаёт автора: ' ||
   (select author || ', лайков ' || likes::text
      from public.list_custom_levels('popular', 10) limit 1);
 
+-- Путь клиента: вставка БЕЗ author_id. Раньше так падало с 403.
+set request.jwt.claim.sub = '11111111-0000-0000-0000-000000000001';
+insert into public.custom_levels (title, layout)
+values ('Кон дөңгелек',
+        '{"v":1,"asyks":[{"x":0.1,"y":0}],"shape":"square","fieldRadius":1.0,"throws":2,"goal":1,"penalty":false,"surface":"dirt"}'::jsonb);
+select '19a. вставка без author_id проходит, автор проставлен сам: ' ||
+  (select (author_id = '11111111-0000-0000-0000-000000000001')::text
+     from public.custom_levels where title = 'Кон дөңгелек');
+
 select '20. счётчик игр растёт: ' ||
   (select plays::text from public.custom_levels
     where id = '44444444-0000-0000-0000-000000000004');
