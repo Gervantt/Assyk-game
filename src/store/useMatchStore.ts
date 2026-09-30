@@ -15,11 +15,22 @@ import {
 } from '@/net/match'
 import { currentUserId } from '@/net/auth'
 import { useGameStore } from './useGameStore'
+import { useI18n, translate } from '@/i18n'
 
 export type OnlineStatus = 'idle' | 'connecting' | 'waiting' | 'playing' | 'finished' | 'error'
 
 const LAYOUT = { kind: 'row' as const, count: 5, fieldRadius: 0.93 }
 const THROWS = 5
+/**
+ * В онлайне ход переходит после КАЖДОГО броска.
+ *
+ * Традиционное правило 4 («выбил — бросаешь ещё раз») хорошо работает во
+ * дворе и в игре вдвоём на одном устройстве: там очередь видна и ждать
+ * недолго. В матче по ссылке на двух устройствах точный игрок вымел бы
+ * весь кон, а соперник просидел бы всю партию, не бросив ни разу.
+ * Поэтому здесь чередование строгое, и у каждого ровно THROWS бросков.
+ */
+const EXTRA_THROW_ON_KNOCKOUT = false
 
 interface MatchStore {
   status: OnlineStatus
@@ -41,32 +52,53 @@ interface MatchStore {
 }
 
 let unsubscribe: (() => void) | null = null
+/** Счётчики для отладки синхронизации: сколько чужих ходов пришло и применилось. */
+export const syncCounters = { received: 0, applied: 0, skipped: 0, own: 0 }
 /** ходы, которые мы применили сами: не проигрывать их второй раз из Realtime */
 const appliedTurns = new Set<number>()
 
 function namesFor(players: MatchPlayer[], row: MatchRow): string[] {
-  const name = (id: string | null) =>
-    players.find((p) => p.id === id)?.username ?? (id ? 'Ойыншы' : '…')
-  return [name(row.player1), name(row.player2)]
+  const locale = useI18n.getState().locale
+  const name = (id: string | null, slot: number) => {
+    if (!id) return translate(locale, 'online.slotEmpty')
+    const found = players.find((p) => p.id === id)?.username
+    return found ?? translate(locale, 'online.playerN', { n: String(slot + 1) })
+  }
+  return [name(row.player1, 0), name(row.player2, 1)]
 }
 
-/** Собирает локальный матч из строки БД: состояние или чистый старт по seed. */
+/**
+ * Собирает локальный матч из строки БД: состояние или чистый старт по seed.
+ * Имена в сохранённом состоянии заведомо устаревшие (создатель записал его до
+ * того, как соперник вступил), поэтому ВСЕГДА берём их из профилей заново.
+ */
 function restore(row: MatchRow, players: MatchPlayer[]): MatchState {
-  if (row.state) return row.state
+  const names = namesFor(players, row)
+  const withNames = (m: MatchState): MatchState => ({
+    ...m,
+    players: m.players.map((p, i) => ({ ...p, name: names[i] ?? p.name })),
+  })
+  if (row.state) return withNames(row.state)
   const rules = row.rules
   return buildMatch({
     mode: 'hotseat',
     seed: row.seed,
     layout: rules.layout as never,
-    playerNames: namesFor(players, row),
+    playerNames: names,
     rules: {
       throwsPerPlayer: rules.throwsPerPlayer,
       sakaInFieldPenalty: rules.sakaInFieldPenalty,
-      extraThrowOnKnockOut: true,
+      extraThrowOnKnockOut: EXTRA_THROW_ON_KNOCKOUT,
       comboBonus: false,
       goal: 0,
     },
   })
+}
+
+/** Подтянуть свежие имена в идущую партию (соперник вступил / профили дозагрузились). */
+function refreshNames(players: MatchPlayer[], row: MatchRow | null): void {
+  if (!row) return
+  useGameStore.getState().setPlayerNames(namesFor(players, row))
 }
 
 export const useMatchStore = create<MatchStore>((set, get) => ({
@@ -103,7 +135,7 @@ export const useMatchStore = create<MatchStore>((set, get) => ({
       rules: {
         throwsPerPlayer: THROWS,
         sakaInFieldPenalty: true,
-        extraThrowOnKnockOut: true,
+        extraThrowOnKnockOut: EXTRA_THROW_ON_KNOCKOUT,
         comboBonus: false,
         goal: 0,
       },
@@ -142,6 +174,7 @@ export const useMatchStore = create<MatchStore>((set, get) => ({
 
     const local = restore(row, players)
     useGameStore.getState().adoptMatch(local)
+    refreshNames(players, row)
 
     set({
       myId,
@@ -201,8 +234,12 @@ export const useMatchStore = create<MatchStore>((set, get) => ({
         // соперник вступил — подтянем имена
         if (updated.player2 && get().players.length < 2) {
           void fetchSnapshot(matchId).then((s) => {
-            if (s) set({ players: s.players })
+            if (!s) return
+            set({ players: s.players })
+            refreshNames(s.players, get().row)
           })
+        } else {
+          refreshNames(get().players, updated)
         }
       },
       onPresence: (ids) => set({ opponentOnline: ids.some((id) => id !== myId) }),
@@ -231,9 +268,17 @@ async function handleRemoteMove(
 ): Promise<void> {
   const { myId, matchId } = get()
   if (!myId || !matchId) return
-  if (move.player_id === myId) return
-  if (appliedTurns.has(move.turn_no)) return
+  syncCounters.received++
+  if (move.player_id === myId) {
+    syncCounters.own++
+    return
+  }
+  if (appliedTurns.has(move.turn_no)) {
+    syncCounters.skipped++
+    return
+  }
   appliedTurns.add(move.turn_no)
+  syncCounters.applied++
 
   const localHash = useGameStore.getState().applyRemoteThrow(move.input)
   if (localHash && localHash === move.result_hash) return
@@ -271,6 +316,7 @@ export function installMatchDebug(): void {
       scores: game.match?.players.map((p) => p.score) ?? [],
       currentPlayer: game.match?.currentPlayer ?? null,
       status: online.status,
+      sync: { ...syncCounters },
       myId: online.myId,
       currentTurnId: online.row?.current_turn ?? null,
       opponentOnline: online.opponentOnline,

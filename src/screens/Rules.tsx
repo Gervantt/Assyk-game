@@ -38,6 +38,9 @@ export function Rules() {
               </span>
               <span>
                 {t(k)}
+                {k === 'rules.4' && (
+                  <em className="mt-1 block not-italic text-xs text-steppe-300">{t('rules.4note')}</em>
+                )}
                 {k === 'rules.5' && (
                   <em className="mt-1 block not-italic text-xs text-steppe-300">{t('rules.5note')}</em>
                 )}

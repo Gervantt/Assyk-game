@@ -43,7 +43,7 @@ export function OnlineMatch() {
   const navigate = useNavigate()
   const { matchId } = useParams<{ matchId: string }>()
 
-  const { status, row, players, opponentOnline, desyncs, open, leave, myId } = useMatchStore()
+  const { status, row, opponentOnline, desyncs, open, leave, myId } = useMatchStore()
   const match = useGameStore((s) => s.match)
   const phase = useGameStore((s) => s.phase)
   const [copied, setCopied] = useState(false)
@@ -114,6 +114,9 @@ export function OnlineMatch() {
           <p className="mt-2 text-center text-sm leading-relaxed text-steppe-300">
             {t('online.waitingHint')}
           </p>
+          <p className="mt-3 rounded-2xl bg-sky-550/15 px-4 py-2 text-center text-xs leading-relaxed text-sky-450 ring-1 ring-sky-450/25">
+            {t('online.alternate')}
+          </p>
 
           <div className="mt-6 flex h-3 items-center gap-1.5">
             {[0, 1, 2].map((i) => (
@@ -163,12 +166,12 @@ export function OnlineMatch() {
           {match.players.map((p, i) => (
             <span key={p.index} className="flex items-baseline gap-1">
               <span
-                className={`max-w-[68px] truncate text-[10px] uppercase tracking-wider ${
+                className={`max-w-[96px] truncate text-[10px] uppercase tracking-wider ${
                   i === myIndex ? 'text-gold-400' : 'text-steppe-300'
                 }`}
+                title={p.name}
               >
-                {players.find((x) => x.id === (i === 0 ? row?.player1 : row?.player2))?.username ??
-                  p.name}
+                {p.name}
               </span>
               <b className="text-sm text-steppe-50">{p.score}</b>
             </span>

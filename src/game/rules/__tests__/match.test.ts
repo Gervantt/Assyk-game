@@ -127,12 +127,23 @@ describe('режим «тренировка»', () => {
   })
 })
 
-describe('hot-seat (правило 4)', () => {
-  it('выбил — бросаешь ещё раз', () => {
+describe('hot-seat (строгое чередование)', () => {
+  it('даже после попадания ход переходит сопернику', () => {
     const m = hotseat()
     const r = applyThrow(m, HIT)
     expect(r.summary.points).toBeGreaterThan(0)
-    expect(r.match.currentPlayer).toBe(m.currentPlayer)
+    expect(r.match.currentPlayer).not.toBe(m.currentPlayer)
+  })
+
+  it('оба игрока успевают бросить, как бы метко ни играл первый', () => {
+    let m = hotseat()
+    const seen = new Set<number>()
+    for (let i = 0; i < 10 && m.status !== 'finished'; i++) {
+      seen.add(m.currentPlayer)
+      m = applyThrow(m, HIT).match
+    }
+    expect(seen).toEqual(new Set([0, 1]))
+    expect(m.players.every((p) => p.throwsUsed > 0)).toBe(true)
   })
 
   it('промах — ход переходит сопернику', () => {
@@ -193,5 +204,47 @@ describe('hot-seat (правило 4)', () => {
     applyThrow(m, HIT)
     applyThrow(m, HIT)
     expect(JSON.stringify(m.players)).toBe(before)
+  })
+})
+
+describe('строгое чередование (онлайн-матч по ссылке)', () => {
+  it('без правила «выбил — бросай ещё» ход переходит даже после попадания', () => {
+    const online = createMatch({
+      mode: 'hotseat',
+      seed: 5,
+      layout: { kind: 'row', count: 5 },
+      playerNames: ['A', 'B'],
+      rules: { extraThrowOnKnockOut: false, throwsPerPlayer: 5, goal: 0 },
+    })
+    const r = applyThrow(online, HIT)
+    expect(r.summary.points, 'нужен результативный бросок').toBeGreaterThan(0)
+    expect(r.match.currentPlayer, 'ход обязан перейти сопернику').not.toBe(online.currentPlayer)
+  })
+
+  it('с правилом включённым попадание оставляет ход у того же игрока', () => {
+    const yard = createMatch({
+      mode: 'hotseat',
+      seed: 5,
+      layout: { kind: 'row', count: 5 },
+      playerNames: ['A', 'B'],
+      rules: { extraThrowOnKnockOut: true, throwsPerPlayer: 5, goal: 0 },
+    })
+    const r = applyThrow(yard, HIT)
+    expect(r.summary.points).toBeGreaterThan(0)
+    expect(r.match.currentPlayer).toBe(yard.currentPlayer)
+  })
+
+  it('у каждого игрока ровно свой бюджет бросков', () => {
+    let m = createMatch({
+      mode: 'hotseat',
+      seed: 5,
+      layout: { kind: 'row', count: 5 },
+      playerNames: ['A', 'B'],
+      rules: { extraThrowOnKnockOut: false, throwsPerPlayer: 3, goal: 0 },
+    })
+    let guard = 0
+    while (m.status === 'aiming' && guard++ < 20) m = applyThrow(m, MISS).match
+    expect(m.players[0]!.throwsUsed).toBe(3)
+    expect(m.players[1]!.throwsUsed).toBe(3)
   })
 })

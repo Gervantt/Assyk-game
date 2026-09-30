@@ -85,6 +85,8 @@ interface GameStore {
   applyRemoteThrow: (input: ThrowInput) => string | null
   /** принять готовое состояние матча: восстановление из БД и разрешение рассинхрона */
   adoptMatch: (match: MatchState) => void
+  /** Переименовать игроков, не трогая ход партии (имена приходят из профилей). */
+  setPlayerNames: (names: string[]) => void
   setCamera: (c: CameraMode) => void
   dismissToast: (id: number) => void
 }
@@ -124,6 +126,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   startSession: (config) => {
     stopPlayback()
     resetShake()
+    // Локальная партия никогда не должна тащить хвост онлайн-матча: забытый
+    // turnGuard заблокировал бы все броски, а throwHook отправил бы ход в чужой матч.
+    throwHook = null
+    turnGuard = null
     set({
       session: config,
       match: createMatch({
@@ -170,6 +176,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   leave: () => {
     stopPlayback()
     resetShake()
+    throwHook = null
+    turnGuard = null
     set({ session: null, match: null, ...FRESH })
   },
 
@@ -194,6 +202,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   setTurnGuard: (fn) => {
     turnGuard = fn
+  },
+
+  setPlayerNames: (names) => {
+    const rename = (m: MatchState | null) =>
+      m ? { ...m, players: m.players.map((p, i) => ({ ...p, name: names[i] ?? p.name })) } : m
+    const { match, pending } = get()
+    if (!match) return
+    set({ match: rename(match)!, pending: rename(pending) })
   },
 
   adoptMatch: (match) => {

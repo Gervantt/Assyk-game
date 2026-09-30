@@ -80,8 +80,15 @@ export const dict = {
     ru: 'Не удалось подключиться к матчу',
     en: 'Could not join the match',
   },
+  'online.slotEmpty': { kk: 'Қарсылас күтілуде', ru: 'Ждём соперника', en: 'Waiting' },
+  'online.playerN': { kk: 'Ойыншы {n}', ru: 'Игрок {n}', en: 'Player {n}' },
   'online.finished': { kk: 'Матч аяқталды', ru: 'Матч окончен', en: 'Match over' },
   'online.newMatch': { kk: 'Жаңа матч', ru: 'Новый матч', en: 'New match' },
+  'online.alternate': {
+    kk: 'Онлайнда кезек әр лақтырудан кейін ауысады: әрқайсыңда 5 лақтыру.',
+    ru: 'В онлайне ход переходит после каждого броска: у каждого по 5 бросков.',
+    en: 'Online, the turn passes after every throw: five throws each.',
+  },
 
   'daily.title': { kk: 'Күнделікті сынақ', ru: 'Испытание дня', en: 'Daily challenge' },
   'daily.play': { kk: 'Бастау', ru: 'Играть', en: 'Play' },
@@ -369,6 +376,11 @@ export const dict = {
     kk: 'Кемінде біреуін ұтсаң — тағы лақтырасың. Тимесе — кезек қарсыласқа.',
     ru: 'Выбил хотя бы один — бросаешь ещё раз. Промах — ход переходит сопернику.',
     en: 'Knock at least one out and you throw again. Miss and the turn passes.',
+  },
+  'rules.4note': {
+    kk: 'Екеу ойнағанда (бір құрылғыда да, желіде де) кезек әр лақтырудан кейін ауысады — әйтпесе мерген бүкіл қонды жалғыз сыпырып кетеді.',
+    ru: 'В матчах вдвоём (и на одном устройстве, и онлайн) ход переходит после каждого броска — иначе меткий игрок выметает весь кон один.',
+    en: 'In two-player games (both hot-seat and online) the turn passes after every throw — otherwise one sharp player clears the whole kon alone.',
   },
   'rules.5': {
     kk: 'Сақа қонның ішінде тоқтаса — айыппұл: −1 ұпай, бір асық қонға қайтады.',
