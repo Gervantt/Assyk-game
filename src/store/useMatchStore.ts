@@ -158,6 +158,9 @@ export const useMatchStore = create<MatchStore>((set, get) => ({
       const nextTurnIndex = next.currentPlayer
       const nextTurnId = nextTurnIndex === 0 ? state.row.player1 : state.row.player2
       const finished = next.status === 'finished'
+      // очередь переключаем немедленно: ждать ответа Realtime нельзя,
+      // иначе в этом окне можно успеть бросить второй раз
+      if (state.row) set({ row: { ...state.row, current_turn: finished ? null : nextTurnId } })
       void submitMove({
         matchId,
         turnNo: next.turnNo,
@@ -171,7 +174,16 @@ export const useMatchStore = create<MatchStore>((set, get) => ({
             ? state.row.player1
             : state.row.player2
           : null,
+      }).then((updated) => {
+        // сервер — источник истины по очереди
+        if (updated) set({ row: updated })
       })
+    })
+
+    // бросок вне очереди не должен доходить до симуляции
+    useGameStore.getState().setTurnGuard(() => {
+      const state = get()
+      return Boolean(state.row && state.myId && state.row.current_turn === state.myId)
     })
 
     unsubscribe = subscribeToMatch(matchId, myId, {
@@ -202,6 +214,7 @@ export const useMatchStore = create<MatchStore>((set, get) => ({
     unsubscribe = null
     appliedTurns.clear()
     useGameStore.getState().setThrowHook(null)
+    useGameStore.getState().setTurnGuard(null)
     set({ status: 'idle', matchId: null, row: null, players: [], opponentOnline: false })
   },
 }))

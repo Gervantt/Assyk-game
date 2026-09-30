@@ -79,6 +79,8 @@ interface GameStore {
   pushToast: (key: DictKey, tone: Toast['tone']) => void
   /** онлайн-матч подписывается сюда, чтобы отправить ход сопернику */
   setThrowHook: (fn: ThrowHook | null) => void
+  /** онлайн-матч ставит сюда проверку «сейчас мой ход» */
+  setTurnGuard: (fn: (() => boolean) | null) => void
   /** применить ход соперника, минуя проверку очереди */
   applyRemoteThrow: (input: ThrowInput) => string | null
   /** принять готовое состояние матча: восстановление из БД и разрешение рассинхрона */
@@ -89,6 +91,12 @@ interface GameStore {
 
 let toastId = 0
 let throwHook: ThrowHook | null = null
+/**
+ * Онлайн-матч ставит сюда проверку очереди. Это страховка второго уровня:
+ * даже если интерфейс где-то пропустит бросок, он не уйдёт сопернику —
+ * сервер всё равно отверг бы его, а состояния успели бы разойтись.
+ */
+let turnGuard: (() => boolean) | null = null
 
 function defaultNames(mode: MatchMode): string[] {
   const locale = useI18n.getState().locale
@@ -168,6 +176,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   throwSaka: (input) => {
     const { match, phase } = get()
     if (!match || phase !== 'aim' || match.status === 'finished') return
+    if (turnGuard && !turnGuard()) return
 
     unlockAudio()
     const { match: next, summary, sim } = applyThrow(match, input)
@@ -181,6 +190,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   setThrowHook: (fn) => {
     throwHook = fn
+  },
+
+  setTurnGuard: (fn) => {
+    turnGuard = fn
   },
 
   adoptMatch: (match) => {

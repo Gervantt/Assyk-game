@@ -32,7 +32,7 @@ export interface GameViewProps {
 }
 
 /** Общая игровая поверхность: сцена, управление, эффекты. */
-export function GameView({ match, elevationLock, gate, children }: GameViewProps) {
+export function GameView({ match, canThrow = true, elevationLock, gate, children }: GameViewProps) {
   const phase = useGameStore((s) => s.phase)
   const celebrate = useGameStore((s) => s.celebrate)
   const maxPower = useGameStore((s) => s.session?.maxPower ?? 1)
@@ -46,7 +46,7 @@ export function GameView({ match, elevationLock, gate, children }: GameViewProps
       <GameCanvas world={match.world} preview={PREVIEW_BY_MODE[match.mode] ?? 'medium'} />
       <AimLayer
         world={match.world}
-        enabled={phase === 'aim'}
+        enabled={phase === 'aim' && canThrow}
         maxPower={maxPower}
         elevationLock={elevationLock}
         gate={gate}
