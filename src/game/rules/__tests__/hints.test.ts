@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { createWorld, simulate, type WorldState } from '@/physics'
+import { BODY_ASYK, createWorld, simulate, type WorldState } from '@/physics'
 import { dominantHint, hintForThrow, starsFor, type HintKey } from '../hints'
 import { findThrow, outcomeOf, shot } from './helpers'
 
 function hintOf(world: WorldState, input: ReturnType<typeof shot>): HintKey {
   const r = simulate(world, input)
-  return hintForThrow(r.finalState, r.events)
+  // столько выбито ИМЕННО этим броском: в свежем мире ни один асық ещё
+  // не был засчитан, поэтому достаточно посчитать вылетевшие
+  const knocked = r.finalState.bodies.filter((b) => b.kind === BODY_ASYK && b.outOfField).length
+  return hintForThrow(r.finalState, r.events, knocked)
 }
 
 const row = (count = 3, fieldRadius?: number) => () =>
@@ -100,5 +103,23 @@ describe('звёзды', () => {
     expect(starsFor(3, [2, 3])).toBe(2)
     expect(starsFor(4, [2, 3])).toBe(1)
     expect(starsFor(99, [2, 3])).toBe(1)
+  })
+})
+
+describe('совет относится к текущему броску, а не ко всей партии', () => {
+  it('промах после удачного броска не хвалят', () => {
+    const world = createWorld({ seed: 9, layout: { kind: 'row', count: 3 } })
+    // в мире уже есть выбитый асық из прошлого хода
+    const asyk = world.bodies.find((b) => b.kind === BODY_ASYK)!
+    asyk.outOfField = true
+    asyk.scored = true
+
+    const miss = findThrow(
+      () => createWorld({ seed: 9, layout: { kind: 'row', count: 3 } }),
+      (o) => !o.hit && !o.insideAfter,
+    )
+    const r = simulate(world, miss)
+    // этим броском не выбито ничего — совет обязан быть про ошибку
+    expect(hintForThrow(r.finalState, r.events, 0)).not.toBe('hint.good')
   })
 })

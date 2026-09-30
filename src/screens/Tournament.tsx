@@ -56,7 +56,7 @@ function Pair({
       {playable && (
         <Link
           to={`/m/${pair.match}`}
-          className="mt-2 flex min-h-[40px] items-center justify-center rounded-xl bg-gold-400 text-xs font-bold text-night-900"
+          className="mt-2 flex min-h-[44px] items-center justify-center rounded-xl bg-gold-400 text-xs font-bold text-night-900"
         >
           {t('tour.playMatch')}
         </Link>

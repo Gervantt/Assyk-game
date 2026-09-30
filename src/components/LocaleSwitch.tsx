@@ -12,7 +12,7 @@ export function LocaleSwitch({ compact = false }: { compact?: boolean }) {
           type="button"
           onClick={() => setLocale(l)}
           aria-pressed={locale === l}
-          className={`min-h-[34px] rounded-full px-3 text-xs font-semibold transition-colors ${
+          className={`min-h-[44px] rounded-full px-3 text-xs font-semibold transition-colors ${
             locale === l ? 'bg-gold-400 text-night-900' : 'text-steppe-100 hover:bg-white/10'
           }`}
         >

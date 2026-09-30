@@ -87,7 +87,7 @@ export function CustomFeed() {
             key={tab}
             type="button"
             onClick={() => setSort(tab)}
-            className={`min-h-[40px] flex-1 rounded-xl text-sm font-bold ${
+            className={`min-h-[44px] flex-1 rounded-xl text-sm font-bold ${
               sort === tab
                 ? 'bg-white/15 text-steppe-50 ring-1 ring-gold-400/40'
                 : 'bg-white/5 text-steppe-300'

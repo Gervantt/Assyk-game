@@ -16,19 +16,28 @@ export type HintKey =
   | 'hint.almost'
   | 'hint.good'
 
-export function hintForThrow(world: WorldState, events: SimEvent[]): HintKey {
+/**
+ * Совет по ИМЕННО ЭТОМУ броску.
+ *
+ * `knockedThisThrow` обязателен и приходит из scoreThrow. Раньше число
+ * выбитых считалось прямо по миру — а там оно накопительное: стоило один раз
+ * выбить асық, и любой следующий промах хвалили как удачный бросок.
+ */
+export function hintForThrow(
+  world: WorldState,
+  events: SimEvent[],
+  knockedThisThrow: number,
+): HintKey {
   const saka = world.bodies.find((b) => b.kind === BODY_SAKA)
   const asykIds = new Set(world.bodies.filter((b) => b.kind === BODY_ASYK).map((b) => b.id))
 
-  // выбитым считается только тот, кто остановился за кругом
-  const knocked = world.bodies.filter((b) => b.kind === BODY_ASYK && b.outOfField).length
   const sakaHitAsyk = events.some(
     (e) => e.type === 'bodyHit' && ((e.a === 0 && asykIds.has(e.b)) || (e.b === 0 && asykIds.has(e.a))),
   )
   const lost = events.some((e) => e.type === 'sakaLost')
   const stoppedInside = events.some((e) => e.type === 'sakaRest' && e.inside)
 
-  if (knocked > 0) return stoppedInside ? 'hint.sakaInside' : 'hint.good'
+  if (knockedThisThrow > 0) return stoppedInside ? 'hint.sakaInside' : 'hint.good'
   if (lost) return 'hint.overshoot'
   if (sakaHitAsyk) return 'hint.weak'
 

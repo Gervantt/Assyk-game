@@ -143,7 +143,7 @@ export function applyThrow(match: MatchState, input: ThrowInput): ApplyThrowResu
     sakaLost: outcome.sakaLost,
     hits: sim.events.filter((e) => e.type === 'bodyHit').length,
     resultHash: stateHash(world),
-    hint: hintForThrow(world, sim.events),
+    hint: hintForThrow(world, sim.events, outcome.knockedOut.length),
   }
 
   const staged: MatchState = {

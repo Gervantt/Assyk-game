@@ -48,7 +48,7 @@ export function League() {
         <button
           type="button"
           onClick={() => setOffset((o) => o - 1)}
-          className="min-h-[36px] rounded-xl px-3 text-sm text-steppe-200"
+          className="min-h-[44px] rounded-xl px-3 text-sm text-steppe-200"
         >
           ←
         </button>
@@ -59,7 +59,7 @@ export function League() {
           type="button"
           disabled={offset >= 0}
           onClick={() => setOffset((o) => Math.min(0, o + 1))}
-          className="min-h-[36px] rounded-xl px-3 text-sm text-steppe-200 disabled:opacity-30"
+          className="min-h-[44px] rounded-xl px-3 text-sm text-steppe-200 disabled:opacity-30"
         >
           →
         </button>

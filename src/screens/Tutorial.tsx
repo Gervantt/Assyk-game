@@ -39,15 +39,27 @@ export function Tutorial() {
   const navigate = useNavigate()
   const [step, setStep] = useState<Step>(1)
   const [nudge, setNudge] = useState(false)
-  const [preset, setPreset] = useState<number | null>(null)
+  /**
+   * Угол подъёма по умолчанию — плоский.
+   *
+   * Без пресета угол берётся из вертикальной доли жеста, а подсказка просит
+   * «тянуть вниз»: строго вертикальная тяга даёт максимальные 60°, то есть
+   * навес — худший бросок из возможных. Перебор всех бросков на раскладке
+   * обучения: при 60° выбивают 2 броска из 558, при 5° — 103. Новичок,
+   * делающий ровно то, что написано, не мог пройти третий шаг.
+   */
+  const [preset, setPreset] = useState<number | null>((PRESETS[0]!.deg * Math.PI) / 180)
 
   const match = useGameStore((s) => s.match)
   const phase = useGameStore((s) => s.phase)
   const lastSummary = useGameStore((s) => s.lastSummary)
   const startSession = useGameStore((s) => s.startSession)
+  const restart = useGameStore((s) => s.restart)
   const leave = useGameStore((s) => s.leave)
 
   const seenTurns = useRef(0)
+  /** нужно переставить кон перед третьим шагом */
+  const needsReset = useRef(false)
 
   useEffect(() => {
     startSession({
@@ -71,7 +83,13 @@ export function Tutorial() {
     setNudge(false)
     setStep((current) => {
       if (current === 1) return 2
-      if (current === 2) return 3
+      if (current === 2) {
+        // Первые два шага про прицел и силу, и к третьему кон уже разбит:
+        // асыки сдвинуты, часть выбита, и «выбей асық» может оказаться
+        // невыполнимым броском. Ставим кон заново.
+        needsReset.current = true
+        return 3
+      }
       if (current === 3) {
         if (lastSummary && lastSummary.points > 0) return 'done'
         setNudge(true)
@@ -80,6 +98,15 @@ export function Tutorial() {
       return current
     })
   }, [match, phase, lastSummary])
+
+  // Сброс кона делаем отдельным эффектом: внутри setStep менять состояние
+  // стора нельзя — React вызывает обновляющую функцию и в строгом режиме дважды.
+  useEffect(() => {
+    if (!needsReset.current) return
+    needsReset.current = false
+    seenTurns.current = 0
+    restart()
+  }, [step, restart])
 
   useEffect(() => {
     if (step === 'done') markTutorialDone()
@@ -156,7 +183,7 @@ export function Tutorial() {
                 <button
                   key={item.key}
                   type="button"
-                  onClick={() => setPreset(on ? null : rad)}
+                  onClick={() => setPreset(rad)}
                   aria-pressed={on}
                   className={`min-h-[44px] rounded-full px-4 text-xs font-bold ring-1 transition-colors ${
                     on

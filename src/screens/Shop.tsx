@@ -86,7 +86,7 @@ export function Shop() {
             key={k}
             type="button"
             onClick={() => setTab(k)}
-            className={`min-h-[40px] flex-1 rounded-xl text-xs font-bold ${
+            className={`min-h-[44px] flex-1 rounded-xl text-xs font-bold ${
               tab === k ? 'bg-white/15 text-steppe-50 ring-1 ring-gold-400/40' : 'bg-white/5 text-steppe-300'
             }`}
           >

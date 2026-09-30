@@ -380,3 +380,27 @@ function objectiveDone(match: MatchState): boolean {
   if (goal <= 0) return true
   return match.world.bodies.filter((b) => b.kind === BODY_ASYK && b.outOfField).length >= goal
 }
+
+/**
+ * Отладочный доступ к состоянию партии: `?gamedebug=1` вешает на window
+ * функцию, которой пользуются браузерные проверки. Без параметра ничего
+ * не создаётся и в обычной игре хука нет.
+ */
+export function installGameDebug(): void {
+  if (typeof window === 'undefined') return
+  if (!new URLSearchParams(window.location.search).has('gamedebug')) return
+  const w = window as unknown as { __asyqGame?: () => unknown }
+  w.__asyqGame = () => {
+    const s = useGameStore.getState()
+    return {
+      phase: s.phase,
+      turnNo: s.match?.turnNo ?? null,
+      status: s.match?.status ?? null,
+      scores: s.match?.players.map((p) => p.score) ?? [],
+      throwsUsed: s.match?.players.map((p) => p.throwsUsed) ?? [],
+      lastSummary: s.lastSummary,
+      inKon: s.match ? s.match.world.bodies.filter((b) => b.kind === BODY_ASYK && !b.outOfField && !b.removed).length : null,
+      outOfField: s.match ? s.match.world.bodies.filter((b) => b.kind === BODY_ASYK && b.outOfField).length : null,
+    }
+  }
+}
