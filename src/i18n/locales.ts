@@ -696,6 +696,14 @@ export const dict = {
     en: 'Tournament matches are ordinary online matches: same physics, same rules. The server takes the winner from the match result, not from the client.',
   },
 
+  'settings.music': { kk: 'Күй', ru: 'Музыка (күй)', en: 'Music (küi)' },
+  'settings.music.hint': {
+    kk: 'Ойын кезінде домбыра күйі ойналады.',
+    ru: 'Во время игры звучит күй на домбре.',
+    en: 'A dombyra küi plays during the game.',
+  },
+  'settings.musicVolume': { kk: 'Күй дыбысы', ru: 'Громкость музыки', en: 'Music volume' },
+
   'common.play': { kk: 'Ойнау', ru: 'Играть', en: 'Play' },
   'common.loading': { kk: 'Жүктелуде…', ru: 'Загрузка…', en: 'Loading…' },
   'common.of': { kk: '/', ru: '/', en: '/' },

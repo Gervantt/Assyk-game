@@ -9,6 +9,9 @@ export interface Settings {
   volume: number
   effects: EffectsLevel
   haptics: boolean
+  /** фоновый күй во время игры */
+  music: boolean
+  musicVolume: number
 }
 
 function prefersReducedMotion(): boolean {
@@ -21,6 +24,8 @@ function prefersReducedMotion(): boolean {
 
 function load(): Settings {
   const fallback: Settings = {
+    music: true,
+    musicVolume: 0.45,
     sound: true,
     volume: 0.7,
     effects: prefersReducedMotion() ? 'low' : 'full',
@@ -59,15 +64,22 @@ export const useSettings = create<SettingsStore>((set, get) => ({
   ...load(),
   set: (key, value) => {
     set({ [key]: value } as Pick<Settings, typeof key>)
-    const { sound, volume, effects, haptics } = get()
-    persist({ sound, volume, effects, haptics })
+    const { sound, volume, effects, haptics, music, musicVolume } = get()
+    persist({ sound, volume, effects, haptics, music, musicVolume })
   },
 }))
 
 /** Снимок настроек вне React — для useFrame и звука. */
 export function settings(): Settings {
   const s = useSettings.getState()
-  return { sound: s.sound, volume: s.volume, effects: s.effects, haptics: s.haptics }
+  return {
+    sound: s.sound,
+    volume: s.volume,
+    effects: s.effects,
+    haptics: s.haptics,
+    music: s.music,
+    musicVolume: s.musicVolume,
+  }
 }
 
 export function effectsLevel(): EffectsLevel {

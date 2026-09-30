@@ -101,6 +101,36 @@ export function Settings() {
               aria-label={t('settings.volume')}
             />
           </div>
+
+          <div className="mt-5 border-t border-white/10 pt-4">
+            <Toggle
+              label={t('settings.music')}
+              value={s.music}
+              onChange={(v) => {
+                s.set('music', v)
+                if (v) unlockAudio()
+              }}
+            />
+            <p className="mt-2 text-xs leading-relaxed text-steppe-300">{t('settings.music.hint')}</p>
+            <div className="mt-3">
+              <div className="flex items-center justify-between text-sm font-semibold text-steppe-50">
+                <span>{t('settings.musicVolume')}</span>
+                <span className="font-mono text-xs text-steppe-300">
+                  {Math.round(s.musicVolume * 100)}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={Math.round(s.musicVolume * 100)}
+                disabled={!s.music || !s.sound}
+                onChange={(e) => s.set('musicVolume', Number(e.target.value) / 100)}
+                className="mt-2 h-11 w-full accent-gold-400 disabled:opacity-40"
+                aria-label={t('settings.musicVolume')}
+              />
+            </div>
+          </div>
         </Section>
 
         <Section title={t('settings.effects')}>

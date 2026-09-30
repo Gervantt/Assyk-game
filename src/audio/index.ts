@@ -116,6 +116,8 @@ export function unlockAudio(): void {
     get('bone3')
     get('coin')
     get('whoosh')
+    // музыку могли попросить до первого жеста — браузер её тогда не пустил
+    syncMusic()
   } catch {
     /* звук просто не заработает — игра от этого не ломается */
   }
@@ -123,6 +125,7 @@ export function unlockAudio(): void {
 
 useSettings.subscribe((s) => {
   try {
+    syncMusic()
     Howler.mute(!s.sound)
   } catch {
     /* ignore */
@@ -130,3 +133,61 @@ useSettings.subscribe((s) => {
 })
 
 export type { SoundName }
+
+/**
+ * Фоновый күй во время броска.
+ *
+ * Играет только на игровых экранах и только после первого жеста игрока:
+ * браузеры не дают запускать звук раньше. Файл один, крутится по кругу,
+ * громкость отдельная от эффектов — удары должны быть слышны поверх.
+ */
+const MUSIC_URL = '/audio/kui-dombyra.mp3'
+let music: Howl | null = null
+let musicWanted = false
+
+function musicVolume(): number {
+  const s = settings()
+  return s.music ? s.musicVolume * BUS_VOLUME.music * (s.volume > 0 ? 1 : 0) : 0
+}
+
+export function startMusic(): void {
+  musicWanted = true
+  const s = settings()
+  if (!s.music || !s.sound) return
+  if (!music) {
+    try {
+      music = new Howl({
+        src: [MUSIC_URL],
+        format: ['mp3'],
+        loop: true,
+        html5: true, // не держим 740 КБ в памяти декодированными
+        volume: musicVolume(),
+      })
+    } catch {
+      // без музыки игра работает полностью — молча продолжаем
+      return
+    }
+  }
+  music.volume(musicVolume())
+  if (!music.playing()) music.play()
+}
+
+export function stopMusic(): void {
+  musicWanted = false
+  if (music?.playing()) music.fade(music.volume(), 0, 400)
+  window.setTimeout(() => {
+    if (!musicWanted) music?.stop()
+  }, 450)
+}
+
+/** Настройки поменялись — подхватываем громкость и запуск/остановку. */
+export function syncMusic(): void {
+  if (!music) {
+    if (musicWanted) startMusic()
+    return
+  }
+  const v = musicVolume()
+  music.volume(v)
+  if (v <= 0 || !settings().sound) music.pause()
+  else if (musicWanted && !music.playing()) music.play()
+}

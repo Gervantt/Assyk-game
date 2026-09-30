@@ -76,7 +76,7 @@ export function GameCanvas({
 
       <Suspense fallback={null}>
         <SteppeEnvironment />
-        <Ground />
+        <Ground world={world} />
         <FieldMarks field={world.field} throwLineY={world.throwLineY} />
         <Bodies world={world} />
         <AimIndicator world={world} preview={preview} />

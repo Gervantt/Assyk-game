@@ -9,6 +9,7 @@ import { Toasts } from '@/components/Toasts'
 import { Confetti } from '@/components/Confetti'
 import { resetCamera } from '@/game/camera/cameraDirector'
 import { useGameStore } from '@/store/useGameStore'
+import { startMusic, stopMusic } from '@/audio'
 
 /** Сколько траектории показывать: в обучении всю, в рейтинге почти ничего. */
 const PREVIEW_BY_MODE: Record<string, PreviewMode> = {
@@ -40,6 +41,13 @@ export function GameView({ match, canThrow = true, elevationLock, gate, children
   useEffect(() => {
     resetCamera()
   }, [match.mode])
+
+  // Күй звучит только пока открыт игровой экран. Браузер не даст включить
+  // звук до первого жеста — тогда музыка подхватится из unlockAudio().
+  useEffect(() => {
+    startMusic()
+    return () => stopMusic()
+  }, [])
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-night-900">

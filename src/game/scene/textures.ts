@@ -108,3 +108,93 @@ export function groundTextures(repeat = 22): { albedo: THREE.Texture; normal: TH
   cache = { albedo, normal }
   return cache
 }
+
+/**
+ * Крашеная сақа: настоящая текстура, а не красный цвет поверх кости.
+ *
+ * Простое умножение материала на красный давало плоское пятно — светлая
+ * кость почти без вариаций, и вся фактура терялась. Здесь краска ложится
+ * НА кость: тёмные места кости остаются тёмными, по краям и на выступах
+ * краска стёрта и кость проглядывает, плюс неровность мазка. Именно так
+ * выглядит асық, покрашенный во дворе.
+ */
+export function paintedSaka(
+  source: THREE.Texture | null,
+  color: { r: number; g: number; b: number },
+  seed = 4242,
+): THREE.CanvasTexture {
+  const base = (source?.image ?? null) as CanvasImageSource | null
+  const c = document.createElement('canvas')
+  c.width = SIZE
+  c.height = SIZE
+  const g = c.getContext('2d')!
+
+  if (base) {
+    g.drawImage(base as CanvasImageSource, 0, 0, SIZE, SIZE)
+  } else {
+    // модель не загрузилась — рисуем кость сами, иначе красить будет нечего
+    g.fillStyle = '#e9dcc0'
+    g.fillRect(0, 0, SIZE, SIZE)
+  }
+
+  const img = g.getImageData(0, 0, SIZE, SIZE)
+  const a = img.data
+  const wear = valueNoise(seed, 12)
+  const grain = valueNoise(seed + 77, 48)
+
+  for (let y = 0; y < SIZE; y++) {
+    for (let x = 0; x < SIZE; x++) {
+      const i = (y * SIZE + x) * 4
+      // яркость кости: она задаёт светотень, краска её не стирает
+      const lum = (a[i]! * 0.299 + a[i + 1]! * 0.587 + a[i + 2]! * 0.114) / 255
+
+      // где краска сошла: пятнами и с мелким зерном
+      const w = wear(x / SIZE, y / SIZE)
+      const n = grain(x / SIZE, y / SIZE)
+      let cover = 0.95 - (w > 0.72 ? (w - 0.72) * 1.7 : 0) - n * 0.1
+      if (cover < 0) cover = 0
+      if (cover > 1) cover = 1
+
+      // краска неоднородна по густоте — мазок кистью
+      const thick = 0.82 + n * 0.32
+
+      const paintR = color.r * thick
+      const paintG = color.g * thick
+      const paintB = color.b * thick
+
+      // кость под краской: сохраняем её светотень
+      const shade = 0.55 + lum * 0.7
+
+      a[i] = Math.min(255, (paintR * cover + a[i]! * (1 - cover)) * shade)
+      a[i + 1] = Math.min(255, (paintG * cover + a[i + 1]! * (1 - cover)) * shade)
+      a[i + 2] = Math.min(255, (paintB * cover + a[i + 2]! * (1 - cover)) * shade)
+    }
+  }
+  g.putImageData(img, 0, 0)
+
+  const tex = new THREE.CanvasTexture(c)
+  tex.colorSpace = THREE.SRGBColorSpace
+  // glTF кладёт текстуры с flipY = false, а CanvasTexture по умолчанию true.
+  // Без копирования настроек выборка уезжает в пустую часть атласа — сақа
+  // получалась белой.
+  if (source) {
+    tex.flipY = source.flipY
+    tex.wrapS = source.wrapS
+    tex.wrapT = source.wrapT
+    tex.offset.copy(source.offset)
+    tex.repeat.copy(source.repeat)
+    tex.center.copy(source.center)
+    tex.rotation = source.rotation
+    tex.channel = source.channel
+  } else {
+    tex.flipY = false
+  }
+  tex.needsUpdate = true
+  return tex
+}
+
+/** '#c33a25' -> {r,g,b} */
+export function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const v = parseInt(hex.replace('#', ''), 16)
+  return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 }
+}
