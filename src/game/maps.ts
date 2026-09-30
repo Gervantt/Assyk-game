@@ -49,9 +49,11 @@ export const ONLINE_MAPS: OnlineMap[] = [
     desc: 'map.gate.d',
     layout: { kind: 'row', count: 4, fieldRadius: 0.85 },
     // два камня оставляют узкий проход: прямой сильный бросок больше не проходит
+    // проход подобран замером: при 0.52 сильный плоский бросок проходил
+    // в 62% случаев, при 0.34 — в 33%
     stones: [
-      { x: -0.52, y: -1.25, radius: 0.2 },
-      { x: 0.52, y: -1.25, radius: 0.2 },
+      { x: -0.34, y: -1.25, radius: 0.2 },
+      { x: 0.34, y: -1.25, radius: 0.2 },
     ],
     relief: 0.022,
     throwsPerPlayer: 5,

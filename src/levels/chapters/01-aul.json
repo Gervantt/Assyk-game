@@ -25,7 +25,8 @@
         2,
         3
       ],
-      "penalty": false
+      "penalty": false,
+      "relief": 0
     },
     {
       "id": "aul-2",
@@ -40,7 +41,8 @@
         2,
         3
       ],
-      "penalty": false
+      "penalty": false,
+      "relief": 0
     },
     {
       "id": "aul-3",
@@ -55,7 +57,8 @@
         4,
         5
       ],
-      "penalty": false
+      "penalty": false,
+      "relief": 0.012
     },
     {
       "id": "aul-4",
@@ -69,7 +72,8 @@
       "stars": [
         2,
         3
-      ]
+      ],
+      "relief": 0.016
     },
     {
       "id": "aul-5",
@@ -83,7 +87,8 @@
       "stars": [
         5,
         6
-      ]
+      ],
+      "relief": 0.022
     },
     {
       "id": "aul-6",
@@ -97,7 +102,8 @@
       "stars": [
         3,
         4
-      ]
+      ],
+      "relief": 0.022
     }
   ]
 }

@@ -62,6 +62,13 @@ function validateLevel(l: LevelDef, source: string, ids: Set<string>): void {
     fail(`неизвестная поверхность «${l.surface}»`)
   }
 
+  if (l.relief !== undefined) {
+    // выше этого тело уже не скользит, а спотыкается о каждый бугор
+    if (!(l.relief >= 0) || l.relief > 0.06) {
+      fail(`рельеф должен быть от 0 до 0.06 м, задано ${l.relief}`)
+    }
+  }
+
   for (const o of l.obstacles ?? []) {
     if (!(o.radius > 0)) fail('радиус препятствия должен быть больше нуля')
   }

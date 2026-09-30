@@ -43,6 +43,11 @@ export interface LevelDef {
   movers?: LevelMover[]
   /** поверхность кона: только оформление уровня, к скинам отношения не имеет */
   surface?: SurfaceName
+  /**
+   * Неровности пола, м. Не задано — стандартные. 0 — идеально ровно:
+   * нужно там, где рельеф вместе с камнями делает уровень непроходимым.
+   */
+  relief?: number
 }
 
 export interface ChapterDef {

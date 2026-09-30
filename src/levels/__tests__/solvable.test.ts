@@ -4,6 +4,7 @@ import { applyThrow, createMatch, knockedOutCount, type MatchState } from '@/gam
 import {
   CAMPAIGN,
   createLevelWorld,
+  levelSeed,
   rulesFor,
   totalAsyks,
   worldExtrasFor,
@@ -25,7 +26,6 @@ const POWERS = 5
 const SPREAD = 0.4
 const BEAM = 2
 
-const SEED = 4242
 const ORIGIN = { x: 0, y: DEFAULT_THROW_LINE_Y }
 
 function candidates(level: CampaignLevel) {
@@ -47,7 +47,9 @@ function candidates(level: CampaignLevel) {
 function matchFor(level: CampaignLevel): MatchState {
   return createMatch({
     mode: 'campaign',
-    seed: SEED,
+    // тот же seed, что у живого игрока: от него зависит рельеф пола,
+    // и проверять проходимость на другом коне бессмысленно
+    seed: levelSeed(level.id),
     layout: {
       kind: level.layout.kind,
       count: level.layout.count,
@@ -105,8 +107,8 @@ describe('кампания', () => {
 
   it('мир уровня строится и воспроизводится по seed', () => {
     for (const l of CAMPAIGN) {
-      const a = createLevelWorld(l, SEED)
-      const b = createLevelWorld(l, SEED)
+      const a = createLevelWorld(l, levelSeed(l.id))
+      const b = createLevelWorld(l, levelSeed(l.id))
       expect(a.bodies.map((x) => `${x.x}:${x.y}`)).toEqual(b.bodies.map((x) => `${x.x}:${x.y}`))
     }
   })

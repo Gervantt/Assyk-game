@@ -28,7 +28,8 @@
       "stars": [
         3,
         4
-      ]
+      ],
+      "relief": 0.03
     },
     {
       "id": "dala-2",
@@ -46,7 +47,8 @@
       "stars": [
         2,
         3
-      ]
+      ],
+      "relief": 0.034
     },
     {
       "id": "dala-3",
@@ -62,7 +64,8 @@
         3,
         4
       ],
-      "penalty": false
+      "penalty": false,
+      "relief": 0.038
     },
     {
       "id": "dala-4",
@@ -82,7 +85,8 @@
         4,
         5
       ],
-      "penalty": false
+      "penalty": false,
+      "relief": 0.041999999999999996
     },
     {
       "id": "dala-5",
@@ -107,7 +111,8 @@
       "stars": [
         2,
         3
-      ]
+      ],
+      "relief": 0.046
     },
     {
       "id": "dala-6",
@@ -147,7 +152,8 @@
       "stars": [
         3,
         4
-      ]
+      ],
+      "relief": 0.05
     }
   ]
 }

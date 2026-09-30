@@ -1,4 +1,4 @@
-import { createWorld, surfaceByName, type CreateWorldOptions } from '@/physics'
+import { createWorld, seedFromString, surfaceByName, type CreateWorldOptions } from '@/physics'
 import aul from './chapters/01-aul.json'
 import aula from './chapters/02-aula.json'
 import qala from './chapters/03-qala.json'
@@ -57,6 +57,9 @@ export function worldOptionsFor(level: LevelDef, seed: number): CreateWorldOptio
     movers: level.movers,
     wind: level.wind,
     surfaceId: level.surface ? surfaceByName(level.surface) : undefined,
+    // Неровности пола — часть замысла уровня. Не задано — берётся значение
+    // по умолчанию; 0 делает пол идеально ровным.
+    relief: level.relief,
   }
 }
 
@@ -83,7 +86,22 @@ export function worldExtrasFor(level: LevelDef) {
     movers: level.movers,
     wind: level.wind,
     surfaceId: level.surface ? surfaceByName(level.surface) : undefined,
+    // Неровности пола — часть замысла уровня. Не задано — берётся значение
+    // по умолчанию; 0 делает пол идеально ровным.
+    relief: level.relief,
   }
 }
 
 export type { CampaignLevel, ChapterDef, LevelDef } from './types'
+
+/**
+ * Seed уровня. Один на всех и навсегда: от него зависит рельеф пола, а
+ * значит и проходимость. Случайный seed делал бы уровень то проходимым,
+ * то нет, а пороги звёзд — нечестными.
+ *
+ * Этим же seed пользуется тест проходимости: иначе он проверял бы не тот
+ * кон, который видит игрок.
+ */
+export function levelSeed(levelId: string): number {
+  return seedFromString(`asyq-level-${levelId}`)
+}

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { BODY_ASYK, seedFromString, type LayoutSpec, type ThrowInput } from '@/physics'
+import { BODY_ASYK, type LayoutSpec, type ThrowInput } from '@/physics'
 import {
   applyThrow,
   createMatch,
@@ -10,7 +10,7 @@ import {
   type ThrowSummary,
   type WorldExtras,
 } from '@/game/rules'
-import { rulesFor, worldExtrasFor, type CampaignLevel } from '@/levels'
+import { levelSeed, rulesFor, worldExtrasFor, type CampaignLevel } from '@/levels'
 import type { DailyLevel } from '@/levels/daily'
 import { knockedOutCount } from '@/game/rules'
 import { activeUserId } from '@/store/useAuthStore'
@@ -152,13 +152,23 @@ export const useGameStore = create<GameStore>((set, get) => ({
     })
   },
 
-  start: (mode) => get().startSession({ mode, layout: { kind: 'row', count: 5 } }),
+  /**
+   * Кон по умолчанию для тренировки и игры вдвоём.
+   *
+   * Был ряд из пяти — и это оказалось главной причиной, почему игра
+   * казалась простой: ряд шириной в метр берётся сильным плоским броском
+   * при ЛЮБОМ угле, замер давал 100% успеха. Круг того же размера требует
+   * целиться: 64%. Сложнее, но не наказывает — по всем броскам подряд
+   * успех падает с 62% до 34%.
+   */
+  start: (mode) =>
+    get().startSession({ mode, layout: { kind: 'circle', count: 5, fieldRadius: 1.15 } }),
 
   startLevel: (level) =>
     get().startSession({
       mode: 'campaign',
       // рельеф и раскладка — часть уровня, а не лотерея попытки
-      seed: seedFromString(`asyq-level-${level.id}`),
+      seed: levelSeed(level.id),
       layout: { ...level.layout },
       rules: rulesFor(level),
       world: worldExtrasFor(level),
