@@ -1,0 +1,14 @@
+// СГЕНЕРИРОВАНО scripts/sync-shared.mjs — не править руками.
+// Источник: src/physics/index.ts
+export * from './types.ts'
+export * from './config.ts'
+export * from './math.ts'
+export * from './rng.ts'
+export * from './hash.ts'
+export * from './field.ts'
+export * from './world.ts'
+export * from './step.ts'
+export * from './simulate.ts'
+export * from './aim.ts'
+export * from './surfaces.ts'
+export * from './toss.ts'

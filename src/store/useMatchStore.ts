@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { drawFirstPlayer, createMatch as buildMatch, type MatchState } from '@/game/rules'
+import { drawFirstPlayer, buildOnlineMatch, type MatchState } from '@/game/rules'
 import { stateHash } from '@/physics'
 import { freshSeed } from '@/lib/format'
 import {
@@ -21,17 +21,6 @@ export type OnlineStatus = 'idle' | 'connecting' | 'waiting' | 'playing' | 'fini
 
 const LAYOUT = { kind: 'row' as const, count: 5, fieldRadius: 0.93 }
 const THROWS = 5
-/**
- * В онлайне ход переходит после КАЖДОГО броска.
- *
- * Традиционное правило 4 («выбил — бросаешь ещё раз») хорошо работает во
- * дворе и в игре вдвоём на одном устройстве: там очередь видна и ждать
- * недолго. В матче по ссылке на двух устройствах точный игрок вымел бы
- * весь кон, а соперник просидел бы всю партию, не бросив ни разу.
- * Поэтому здесь чередование строгое, и у каждого ровно THROWS бросков.
- */
-const EXTRA_THROW_ON_KNOCKOUT = false
-
 interface MatchStore {
   status: OnlineStatus
   matchId: string | null
@@ -79,20 +68,7 @@ function restore(row: MatchRow, players: MatchPlayer[]): MatchState {
     players: m.players.map((p, i) => ({ ...p, name: names[i] ?? p.name })),
   })
   if (row.state) return withNames(row.state)
-  const rules = row.rules
-  return buildMatch({
-    mode: 'hotseat',
-    seed: row.seed,
-    layout: rules.layout as never,
-    playerNames: names,
-    rules: {
-      throwsPerPlayer: rules.throwsPerPlayer,
-      sakaInFieldPenalty: rules.sakaInFieldPenalty,
-      extraThrowOnKnockOut: EXTRA_THROW_ON_KNOCKOUT,
-      comboBonus: false,
-      goal: 0,
-    },
-  })
+  return buildOnlineMatch(row.seed, row.rules, names)
 }
 
 /** Подтянуть свежие имена в идущую партию (соперник вступил / профили дозагрузились). */
@@ -127,19 +103,9 @@ export const useMatchStore = create<MatchStore>((set, get) => ({
       sakaInFieldPenalty: true,
       throwsPerPlayer: THROWS,
     }
-    const state = buildMatch({
-      mode: 'hotseat',
-      seed,
-      layout: LAYOUT,
-      playerNames: ['…', '…'],
-      rules: {
-        throwsPerPlayer: THROWS,
-        sakaInFieldPenalty: true,
-        extraThrowOnKnockOut: EXTRA_THROW_ON_KNOCKOUT,
-        comboBonus: false,
-        goal: 0,
-      },
-    })
+    // Имена здесь заведомо неизвестны: соперник ещё не открыл ссылку.
+    // Они не хранятся в состоянии — restore() всегда берёт их из профилей.
+    const state = buildOnlineMatch(seed, rules, ['', ''])
 
     const row = await createMatchRow(seed, rules, state)
     if (!row) {

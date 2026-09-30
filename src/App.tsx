@@ -9,6 +9,11 @@ import { Tutorial } from '@/screens/Tutorial'
 import { Daily } from '@/screens/Daily'
 import { Profile } from '@/screens/Profile'
 import { OnlineMatch } from '@/screens/OnlineMatch'
+import { Ranked } from '@/screens/Ranked'
+import { League } from '@/screens/League'
+import { Editor } from '@/screens/Editor'
+import { CustomFeed } from '@/screens/CustomFeed'
+import { CustomPlay } from '@/screens/CustomPlay'
 
 export function App() {
   return (
@@ -21,6 +26,11 @@ export function App() {
       <Route path="/daily" element={<Daily />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/m/:matchId" element={<OnlineMatch />} />
+      <Route path="/ranked" element={<Ranked />} />
+      <Route path="/league" element={<League />} />
+      <Route path="/editor" element={<Editor />} />
+      <Route path="/custom" element={<CustomFeed />} />
+      <Route path="/c/:levelId" element={<CustomPlay />} />
       <Route path="/rules" element={<Rules />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="*" element={<Navigate to="/" replace />} />

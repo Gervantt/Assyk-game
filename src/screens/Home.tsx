@@ -118,6 +118,33 @@ export function Home() {
             </button>
           )}
 
+          {backend === 'ready' && (
+            <Link
+              to="/ranked"
+              className="flex min-h-[44px] flex-col gap-1 rounded-3xl bg-white/5 p-5 text-steppe-50 ring-1 ring-white/10 transition-transform hover:bg-white/10 active:scale-[0.98]"
+            >
+              <span className="text-xl font-extrabold">{t('ranked.title')}</span>
+              <span className="text-sm text-steppe-300">{t('ranked.subtitle')}</span>
+            </Link>
+          )}
+
+          <div className="flex gap-3">
+            {(
+              [
+                { to: '/custom', key: 'custom.title' },
+                { to: '/league', key: 'league.title' },
+              ] as const
+            ).map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className="flex min-h-[44px] flex-1 items-center justify-center rounded-3xl bg-white/5 p-4 text-center text-sm font-semibold text-steppe-100 ring-1 ring-white/10 hover:bg-white/10"
+              >
+                {t(item.key)}
+              </Link>
+            ))}
+          </div>
+
           <div className="flex gap-3">
             {(
               [

@@ -9,6 +9,7 @@ import { useT } from '@/i18n'
 import { usePopupStore } from '@/game/fx/popupStore'
 import { useGameStore } from '@/store/useGameStore'
 import { installMatchDebug, useMatchStore } from '@/store/useMatchStore'
+import { requestRating, type RatingChange } from '@/net/ranked'
 
 /** Ссылка-приглашение на этот матч. */
 function inviteUrl(matchId: string): string {
@@ -47,6 +48,21 @@ export function OnlineMatch() {
   const match = useGameStore((s) => s.match)
   const phase = useGameStore((s) => s.phase)
   const [copied, setCopied] = useState(false)
+  const [rating, setRating] = useState<RatingChange | null>(null)
+
+  // Рейтинговый матч доигран — просим сервер пересчитать партию и начислить
+  // ELO. Вызвать может любой из двоих, функция идемпотентна.
+  const ranked = row?.mode === 'ranked'
+  useEffect(() => {
+    if (!ranked || status !== 'finished' || !matchId || !myId || rating) return
+    let cancelled = false
+    void requestRating(matchId, myId).then((r) => {
+      if (!cancelled && r) setRating(r)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [ranked, status, matchId, myId, rating])
 
   useEffect(() => {
     if (!matchId) return
@@ -213,6 +229,22 @@ export function OnlineMatch() {
             <p className="mt-3 text-lg font-bold text-gold-400">
               {match.players.map((p) => `${p.name}: ${p.score}`).join(' · ')}
             </p>
+            {ranked && (
+              <p className="mt-2 text-sm text-steppe-200">
+                {rating ? (
+                  <>
+                    {t('ranked.rating')}:{' '}
+                    <b className={rating.delta >= 0 ? 'text-gold-400' : 'text-sky-450'}>
+                      {rating.delta >= 0 ? '+' : ''}
+                      {rating.delta}
+                    </b>{' '}
+                    → {rating.rating}
+                  </>
+                ) : (
+                  t('ranked.counting')
+                )}
+              </p>
+            )}
             <button
               type="button"
               onClick={() => navigate('/')}

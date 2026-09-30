@@ -45,3 +45,8 @@ echo
 echo "== матч по ссылке =="
 run -d asyq -f supabase/tests/02-online.sql 2>&1 |
   grep -vE '^$|^SET$|^RESET$|Pager|INSERT 0' | sed 's/^ //'
+
+echo
+echo "== рейтинг, лига и испытания =="
+run -d asyq -f supabase/tests/03-ranked.sql 2>&1 |
+  grep -vE '^$|^SET$|^RESET$|Pager|INSERT 0|^UPDATE|^DO$' | sed 's/^ //'

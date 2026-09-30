@@ -1,7 +1,9 @@
-import { PHYSICS, STATE_RESTING } from './config'
-import { quantize } from './math'
-import { rngIntAt } from './rng'
-import { SURFACE_SAND, surfaceAt } from './surfaces'
+// СГЕНЕРИРОВАНО scripts/sync-shared.mjs — не править руками.
+// Источник: src/physics/world.ts
+import { PHYSICS, STATE_RESTING } from './config.ts'
+import { quantize } from './math.ts'
+import { rngIntAt } from './rng.ts'
+import { SURFACE_SAND, surfaceAt } from './surfaces.ts'
 import {
   BODY_ASYK,
   BODY_SAKA,
@@ -10,7 +12,7 @@ import {
   type Field,
   type Mover,
   type WorldState,
-} from './types'
+} from './types.ts'
 
 export type LayoutKind = 'row' | 'pyramid' | 'circle' | 'square' | 'custom'
 

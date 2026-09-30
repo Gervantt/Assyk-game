@@ -1,3 +1,5 @@
+// СГЕНЕРИРОВАНО scripts/sync-shared.mjs — не править руками.
+// Источник: src/game/rules/match.ts
 import {
   createWorld,
   drawFirstByToss,
@@ -7,11 +9,11 @@ import {
   type LayoutSpec,
   type SideName,
   type ThrowInput,
-} from '@/physics'
-import { RULES_BY_MODE } from './config'
-import { hintForThrow } from './hints'
-import { scoreThrow } from './scoring'
-import { leader, nextPlayer, objectiveMet } from './turn'
+} from '../physics/index.ts'
+import { RULES_BY_MODE } from './config.ts'
+import { hintForThrow } from './hints.ts'
+import { scoreThrow } from './scoring.ts'
+import { leader, nextPlayer, objectiveMet } from './turn.ts'
 import type {
   ApplyThrowResult,
   MatchMode,
@@ -19,7 +21,7 @@ import type {
   PlayerState,
   RulesConfig,
   ThrowSummary,
-} from './types'
+} from './types.ts'
 
 /**
  * Очерёдность (правило 7): каждый подбрасывает сақа — той же физикой, что
