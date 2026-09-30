@@ -41,11 +41,38 @@ describe('детерминизм симуляции', () => {
     expect(JSON.stringify(a.frames)).toBe(JSON.stringify(b.frames))
   })
 
-  it('разный seed не влияет на траекторию, только на сторону падения', () => {
+  /**
+   * Раньше seed влиял только на сторону, которой ложится асық. Теперь из него
+   * выводится ещё и рельеф пола, поэтому траектория у разных seed разная — и
+   * это намеренно: на идеально ровном полу сильный плоский бросок выбивал
+   * асыки при любом угле, другой тактики не существовало.
+   *
+   * Гарантия детерминизма от этого не слабеет и формулируется так:
+   * один и тот же seed — всегда один и тот же мир и одна и та же траектория.
+   */
+  it('seed задаёт рельеф, поэтому траектории при разных seed расходятся', () => {
     const w1 = createWorld({ seed: 1, layout: { kind: 'row', count: 5 } })
     const w2 = createWorld({ seed: 999, layout: { kind: 'row', count: 5 } })
     const r1 = simulate(w1, throwUp)
     const r2 = simulate(w2, throwUp)
+    const pos = (r: typeof r1) => r.finalState.bodies.map((b) => [b.x, b.y].join(':')).join('|')
+    expect(pos(r1)).not.toBe(pos(r2))
+    expect(stateHash(r1.finalState)).not.toBe(stateHash(r2.finalState))
+  })
+
+  it('один seed — один и тот же мир, сколько его ни создавай', () => {
+    const make = () => createWorld({ seed: 4242, layout: { kind: 'row', count: 5 } })
+    const a = simulate(make(), throwUp)
+    const b = simulate(make(), throwUp)
+    expect(stateHash(a.finalState)).toBe(stateHash(b.finalState))
+  })
+
+  it('ровный пол возвращает прежнее поведение: seed меняет только сторону', () => {
+    // relief: 0 — обучение и всё, где неровности мешали бы учиться
+    const flat = (seed: number) =>
+      simulate(createWorld({ seed, layout: { kind: 'row', count: 5 }, relief: 0 }), throwUp)
+    const r1 = flat(1)
+    const r2 = flat(999)
     const pos = (r: typeof r1) => r.finalState.bodies.map((b) => [b.x, b.y].join(':')).join('|')
     expect(pos(r1)).toBe(pos(r2))
     expect(stateHash(r1.finalState)).not.toBe(stateHash(r2.finalState))

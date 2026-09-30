@@ -24,6 +24,8 @@ const MODIFIERS = ['plain', 'plain', 'stones', 'wind', 'movers'] as const
 export interface DailyLevel extends LevelDef {
   date: string
   modifier: (typeof MODIFIERS)[number]
+  /** seed мира: один на всех в этот день, включая рельеф пола */
+  seed: number
 }
 
 export function dailyLevel(dateISO: string = todayISO()): DailyLevel {
@@ -40,6 +42,7 @@ export function dailyLevel(dateISO: string = todayISO()): DailyLevel {
     id: `daily-${dateISO}`,
     date: dateISO,
     modifier,
+    seed,
     layout,
     throws: DAILY_THROWS,
     // цель — весь кон: счётом считается, сколько успел выбить за пять бросков

@@ -5,6 +5,7 @@ import { stateHash } from '../hash'
 import { aimFromAngles, makeThrow } from '../aim'
 import { PHYSICS, STATE_RESTING } from '../config'
 import { BODY_SAKA } from '../types'
+import { heightAt, reliefFor } from '../relief'
 
 const SEED = 777
 const ORIGIN = { x: 0, y: DEFAULT_THROW_LINE_Y }
@@ -98,9 +99,15 @@ describe('simulate', () => {
     const w = createWorld({ seed: SEED, layout: { kind: 'row', count: 0 } })
     const r = simulate(w, shot(0, 45, 0.8))
     const zs = r.frames.map((f) => f.bodies[0]!.z)
-    // старт и финиш на земле, между ними настоящая парабола с отскоками
-    expect(zs[0]).toBeCloseTo(PHYSICS.sakaRadius, 5)
-    expect(zs[zs.length - 1]).toBeCloseTo(PHYSICS.sakaRadius, 3)
+    const last = r.frames[r.frames.length - 1]!.bodies[0]!
+    const relief = reliefFor(w.seed, w.reliefAmp, w.bounds.halfWidth)
+    // Старт и финиш — на земле, между ними настоящая парабола с отскоками.
+    // «На земле» теперь зависит от точки: пол не плоский.
+    expect(zs[0]).toBeCloseTo(heightAt(relief, 0, w.throwLineY) + PHYSICS.sakaRadius, 4)
+    expect(zs[zs.length - 1]).toBeCloseTo(
+      heightAt(relief, last.x, last.y) + PHYSICS.sakaRadius,
+      3,
+    )
     expect(peakHeight(r.frames, 0)).toBeGreaterThan(0.8)
   })
 

@@ -1,5 +1,6 @@
 import { PHYSICS, STATE_RESTING } from './config'
 import { quantize } from './math'
+import { heightAt, reliefFor } from './relief'
 import { rngIntAt } from './rng'
 import { SURFACE_SAND, surfaceAt } from './surfaces'
 import {
@@ -104,10 +105,22 @@ export interface CreateWorldOptions {
   wind?: { x: number; y: number }
   /** поверхность кона: задаётся уровнем или режимом, но НЕ скином арены */
   surfaceId?: number
+  /**
+   * Амплитуда неровностей пола, м. По умолчанию PHYSICS.reliefAmplitude.
+   * Ноль — идеально ровно (обучение, где рельеф только мешал бы учиться).
+   */
+  relief?: number
 }
 
 /** Собирает стартовый мир: сақа на линии броска (id 0) + асыки в кону. */
 export function createWorld(opts: CreateWorldOptions): WorldState {
+  const halfW0 = opts.boundsHalfWidth ?? 4.6
+  const halfH0 = opts.boundsHalfHeight ?? 4.6
+  const amp = opts.relief ?? PHYSICS.reliefAmplitude
+  // тела надо ставить НА рельеф, иначе на бугре они наполовину в земле
+  const ground = reliefFor(opts.seed, amp, halfW0 > halfH0 ? halfW0 : halfH0)
+  const floorAt = (x: number, y: number) => quantize(heightAt(ground, x, y))
+
   const fieldRadius = opts.layout.fieldRadius ?? 0.85
   const field: Field = { shape: opts.layout.shape ?? 'circle', cx: 0, cy: 0, radius: fieldRadius }
   const throwLineY = opts.throwLineY ?? DEFAULT_THROW_LINE_Y
@@ -117,7 +130,7 @@ export function createWorld(opts: CreateWorldOptions): WorldState {
     kind: BODY_SAKA,
     x: 0,
     y: throwLineY,
-    z: PHYSICS.sakaRadius,
+    z: quantize(floorAt(0, throwLineY) + PHYSICS.sakaRadius),
     vx: 0,
     vy: 0,
     vz: 0,
@@ -142,7 +155,7 @@ export function createWorld(opts: CreateWorldOptions): WorldState {
       kind: BODY_ASYK,
       x: p.x,
       y: p.y,
-      z: PHYSICS.asykRadius,
+      z: quantize(floorAt(p.x, p.y) + PHYSICS.asykRadius),
       vx: 0,
       vy: 0,
       vz: 0,
@@ -202,7 +215,7 @@ export function createWorld(opts: CreateWorldOptions): WorldState {
       kind: BODY_STONE,
       x: quantize(o.x),
       y: quantize(o.y),
-      z: quantize(o.radius),
+      z: quantize(floorAt(o.x, o.y) + o.radius),
       vx: 0,
       vy: 0,
       vz: 0,
@@ -228,16 +241,15 @@ export function createWorld(opts: CreateWorldOptions): WorldState {
   return {
     bodies,
     field,
-    bounds: {
-      halfWidth: opts.boundsHalfWidth ?? 4.6,
-      halfHeight: opts.boundsHalfHeight ?? 4.6,
-      bounce: opts.bounceWalls ?? false,
-    },
+    bounds: { halfWidth: halfW0, halfHeight: halfH0, bounce: opts.bounceWalls ?? false },
     surfaceId: opts.surfaceId ?? SURFACE_SAND,
     windX: quantize(wx),
     windY: quantize(wy),
     movers,
     throwLineY,
+    // Рельеф выводится из seed матча, поэтому одинаков у обоих соперников
+    // и при каждой перезагрузке: это часть уровня, а не случайность.
+    reliefAmp: amp,
     seed: opts.seed,
     rngCursor: 0,
     tick: 0,
@@ -258,6 +270,7 @@ export function cloneWorld(s: WorldState): WorldState {
     windY: s.windY,
     movers: s.movers.map((m) => ({ ...m })),
     throwLineY: s.throwLineY,
+    reliefAmp: s.reliefAmp,
     seed: s.seed,
     rngCursor: s.rngCursor,
     tick: s.tick,

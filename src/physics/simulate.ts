@@ -1,6 +1,7 @@
 import { PHYSICS, STATE_AIR } from './config'
 import { fieldContains } from './field'
 import { length, quantize } from './math'
+import { heightAt, reliefFor } from './relief'
 import { isSettled, stepWorld } from './step'
 import { cloneWorld } from './world'
 import {
@@ -31,7 +32,19 @@ export function simulate(state: WorldState, input: ThrowInput): SimResult {
   if (!saka) throw new Error('simulate: в мире нет сақа')
   saka.x = quantize(input.originX)
   saka.y = quantize(input.originY)
-  saka.z = saka.radius
+  // бросок начинается с земли В ЭТОЙ ТОЧКЕ, а не с нулевой отметки:
+  // пол неровный, и иначе сақа при броске подпрыгивала бы на ровном месте
+  saka.z = quantize(
+    heightAt(
+      reliefFor(
+        s.seed,
+        s.reliefAmp ?? 0,
+        s.bounds.halfWidth > s.bounds.halfHeight ? s.bounds.halfWidth : s.bounds.halfHeight,
+      ),
+      saka.x,
+      saka.y,
+    ) + saka.radius,
+  )
   saka.vx = quantize(input.vx)
   saka.vy = quantize(input.vy)
   saka.vz = quantize(input.vz)

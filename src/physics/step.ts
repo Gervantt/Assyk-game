@@ -1,6 +1,7 @@
 import { PHYSICS, STATE_AIR, STATE_RESTING, STATE_SLIDING } from './config'
 import { fieldContains } from './field'
 import { length } from './math'
+import { heightAt, reliefFor, slopeAt } from './relief'
 import { surfaceAt } from './surfaces'
 import { BODY_ASYK, BODY_SAKA, BODY_STONE, type Body, type SimEvent, type WorldState } from './types'
 
@@ -57,12 +58,14 @@ function release(state: WorldState, b: Body): void {
  * так физически определяется алшы / тәйкі / бүк / шік, включая жеребьёвку.
  * Math.round определён стандартом точно, поэтому детерминизм не страдает.
  */
-function comeToRest(b: Body): void {
+function comeToRest(b: Body, groundZ: number): void {
   b.vx = 0
   b.vy = 0
   b.vz = 0
   b.omega = 0
-  b.z = b.radius
+  // лечь надо на поверхность под собой, а не на нулевую отметку:
+  // иначе на бугре тело наполовину утопает, а в ямке висит в воздухе
+  b.z = groundZ + b.radius
   b.state = STATE_RESTING
   const k = Math.round(b.tumble / QUARTER)
   b.tumble = k * QUARTER
@@ -85,6 +88,14 @@ export function stepWorld(state: WorldState, events: SimEvent[]): void {
   // ── 1. полёт и скольжение ────────────────────────────────────────────────
   const drag = 1 - PHYSICS.airDrag * dt
   const slideDrop = surface.muSlide * PHYSICS.g * dt
+  // Сетка высот строится один раз на мир и кэшируется: в шаге только чтение.
+  const relief = reliefFor(
+    state.seed,
+    state.reliefAmp ?? 0,
+    state.bounds.halfWidth > state.bounds.halfHeight
+      ? state.bounds.halfWidth
+      : state.bounds.halfHeight,
+  )
   for (let i = 0; i < bodies.length; i++) {
     const b = bodies[i]!
     if (b.removed || b.kind === BODY_STONE) continue
@@ -100,14 +111,29 @@ export function stepWorld(state: WorldState, events: SimEvent[]): void {
       // наклон поля действует только на катящееся тело: лежащее держит трение покоя
       b.vx = b.vx + state.windX * dt
       b.vy = b.vy + state.windY * dt
+
+      // Рельеф: тело скатывается по уклону. Из-за этого сильный плоский
+      // бросок перестаёт быть гарантированным — сақа уводит в сторону,
+      // но уводит ОДИНАКОВО у обоих игроков и при каждой попытке.
+      const sl = slopeAt(relief, b.x, b.y)
+      b.vx = b.vx - PHYSICS.g * sl.dx * dt
+      b.vy = b.vy - PHYSICS.g * sl.dy * dt
+
       const sp = length(b.vx, b.vy)
       if (sp - slideDrop <= PHYSICS.vSleep) {
-        comeToRest(b)
-        continue
+        // На заметном уклоне тело не замирает, а продолжает сползать:
+        // остановиться оно может только там, где трение покоя держит.
+        const steep = length(sl.dx, sl.dy)
+        if (steep < surface.muSlide) {
+          comeToRest(b, heightAt(relief, b.x, b.y))
+          continue
+        }
       }
-      const k = (sp - slideDrop) / sp
-      b.vx = b.vx * k
-      b.vy = b.vy * k
+      if (sp > 0) {
+        const k = sp - slideDrop > 0 ? (sp - slideDrop) / sp : 0
+        b.vx = b.vx * k
+        b.vy = b.vy * k
+      }
       // скользящее тело лежит на земле по определению. Удар мог направить
       // его вниз — тогда без этой строки оно уехало бы под поверхность.
       if (b.vz < 0) b.vz = 0
@@ -116,7 +142,10 @@ export function stepWorld(state: WorldState, events: SimEvent[]): void {
     b.x = b.x + b.vx * dt
     b.y = b.y + b.vy * dt
     b.z = b.z + b.vz * dt
-    if (b.state === STATE_SLIDING && b.z < b.radius) b.z = b.radius
+    if (b.state === STATE_SLIDING) {
+      const ground = heightAt(relief, b.x, b.y) + b.radius
+      if (b.z < ground) b.z = ground
+    }
 
     b.tumble = b.tumble + b.omega * dt
     // рыскание — чистый визуал, отсюда «штопор» летящего асыка
@@ -129,16 +158,25 @@ export function stepWorld(state: WorldState, events: SimEvent[]): void {
   for (let i = 0; i < bodies.length; i++) {
     const b = bodies[i]!
     if (b.removed || b.kind === BODY_STONE || b.state !== STATE_AIR) continue
-    if (b.z > b.radius || b.vz >= 0) continue
+    const ground = heightAt(relief, b.x, b.y) + b.radius
+    if (b.z > ground || b.vz >= 0) continue
 
     const impact = -b.vz
-    b.z = b.radius
-    b.vz = impact * surface.eGround
+    b.z = ground
+
+    // Отскок зависит от того, насколько отвесно пришёлся удар.
+    // Скользящее касание кость гасит, а падение сверху отбивает заметно
+    // сильнее — без этого навесной бросок не имел смысла вовсе.
+    const speed3 = Math.sqrt(b.vx * b.vx + b.vy * b.vy + impact * impact)
+    const vertical = speed3 > 0 ? impact / speed3 : 1
+    let e = surface.eGround * (1 + PHYSICS.bounceGain * vertical * vertical)
+    if (e > PHYSICS.eGroundMax) e = PHYSICS.eGroundMax
+    b.vz = impact * e
 
     // касание съедает часть горизонтальной скорости
     const vT = length(b.vx, b.vy)
     if (vT > 0) {
-      const dvT = surface.mu * (1 + surface.eGround) * impact
+      const dvT = surface.mu * (1 + e) * impact
       const cap = vT * PHYSICS.maxTangentialLoss
       const lost = dvT < cap ? dvT : cap
       const k = (vT - lost) / vT
@@ -204,6 +242,18 @@ export function stepWorld(state: WorldState, events: SimEvent[]): void {
       b.x = b.x + nx * overlap * (invB / invSum)
       b.y = b.y + ny * overlap * (invB / invSum)
       b.z = b.z + nz * overlap * (invB / invSum)
+
+      // Расталкивание сдвигает тела и по вертикали, и вбок — а вбок значит
+      // на другую точку рельефа. Без этой правки тело оказывалось на полмиллиметра
+      // в земле: мелочь по числам, но именно так копится расхождение.
+      if (a.state !== STATE_AIR) {
+        const fa = heightAt(relief, a.x, a.y) + a.radius
+        if (a.z < fa) a.z = fa
+      }
+      if (b.state !== STATE_AIR) {
+        const fb = heightAt(relief, b.x, b.y) + b.radius
+        if (b.z < fb) b.z = fb
+      }
       if (a.z < a.radius) a.z = a.radius
       if (b.z < b.radius) b.z = b.radius
 

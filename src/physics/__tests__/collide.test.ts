@@ -41,6 +41,8 @@ function world(bodies: Body[]): WorldState {
     windY: 0,
     movers: [],
     throwLineY: -3.1,
+    // ровный пол: тесты столкновений проверяют удары тел, а не рельеф
+    reliefAmp: 0,
     seed: 1,
     rngCursor: 0,
     tick: 0,

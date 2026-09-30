@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { BODY_ASYK, type LayoutSpec, type ThrowInput } from '@/physics'
+import { BODY_ASYK, seedFromString, type LayoutSpec, type ThrowInput } from '@/physics'
 import {
   applyThrow,
   createMatch,
@@ -54,6 +54,13 @@ export interface SessionConfig {
   level?: CampaignLevel
   /** ежедневное испытание */
   daily?: DailyLevel
+  /**
+   * Seed мира. Задаётся там, где раскладка обязана быть ОДИНАКОВОЙ при каждой
+   * попытке: в кампании и в ежедневном испытании. От seed зависит не только
+   * сторона падения асыка, но и рельеф пола, поэтому случайный seed сделал бы
+   * один и тот же уровень то проходимым, то нет, а пороги звёзд — нечестными.
+   */
+  seed?: number
 }
 
 interface GameStore {
@@ -135,7 +142,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       session: config,
       match: createMatch({
         mode: config.mode,
-        seed: freshSeed(),
+        seed: config.seed ?? freshSeed(),
         layout: config.layout,
         playerNames: config.playerNames ?? defaultNames(config.mode),
         rules: config.rules,
@@ -150,6 +157,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   startLevel: (level) =>
     get().startSession({
       mode: 'campaign',
+      // рельеф и раскладка — часть уровня, а не лотерея попытки
+      seed: seedFromString(`asyq-level-${level.id}`),
       layout: { ...level.layout },
       rules: rulesFor(level),
       world: worldExtrasFor(level),
@@ -160,6 +169,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   startDaily: (level) =>
     get().startSession({
       mode: 'daily',
+      // у всех игроков день одинаковый — значит и мир обязан совпадать
+      seed: level.seed,
       layout: { ...level.layout },
       rules: rulesFor(level),
       world: worldExtrasFor(level),

@@ -96,6 +96,12 @@ export interface WorldState {
   movers: Mover[]
   /** линия броска: сақа стартует отсюда */
   throwLineY: number
+  /**
+   * Амплитуда неровностей пола, м. Сама сетка высот не хранится: она
+   * выводится из seed и этого числа (см. reliefFor). Так состояние
+   * переживает поездку в Postgres и обратно без потерь.
+   */
+  reliefAmp: number
   /** seed матча и курсор PRNG — вся случайность детерминирована ими */
   seed: number
   rngCursor: number

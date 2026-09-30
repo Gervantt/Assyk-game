@@ -59,10 +59,14 @@ describe('подсказка и реальность про препятстви
   it('высота камня в подсказке та же, что у коллайдера', () => {
     const w = worldWithStone()
     const stone = w.bodies.find((b) => b.kind === BODY_STONE)!
-    // центр сферы стоит на высоте радиуса — значит верх на 2*radius
-    expect(stone.z).toBeCloseTo(stone.radius, 6)
     const obstacles = obstaclesOf(w)
-    expect(obstacles[0]!.z).toBeCloseTo(stone.radius, 6)
+    // Смысл проверки — подсказка не должна врать про камень. Сравниваем её
+    // ровно с коллайдером, а не с радиусом: камень лежит НА рельефе, поэтому
+    // его центр стоит на высоте «земля в этой точке + радиус».
+    expect(obstacles[0]!.z).toBeCloseTo(stone.z, 6)
     expect(obstacles[0]!.radius).toBeCloseTo(stone.radius, 6)
+    // и он действительно приподнят над нулём примерно на радиус
+    expect(stone.z).toBeGreaterThan(stone.radius * 0.9)
+    expect(stone.z).toBeLessThan(stone.radius * 1.1)
   })
 })

@@ -6,6 +6,7 @@ import { mechanicalEnergy, peakHeight, simulate } from '../simulate'
 import { stepWorld } from '../step'
 import { stateHash } from '../hash'
 import { surfaceAt, SURFACE_DIRT, SURFACE_SAND } from '../surfaces'
+import { heightAt, reliefFor } from '../relief'
 import { BODY_SAKA, BODY_STONE, type SimEvent } from '../types'
 
 const ORIGIN = { x: 0, y: DEFAULT_THROW_LINE_Y }
@@ -38,28 +39,68 @@ describe('детерминизм 3D', () => {
   })
 })
 
+/**
+ * Восстановление при ударе о землю зависит от того, насколько отвесно
+ * пришёлся удар: eGround * (1 + bounceGain * vertical²), не выше eGroundMax.
+ * Скользящее касание кость гасит, отвесное падение отбивает живее — без
+ * этого навесной бросок не имел смысла ни при каком угле.
+ */
+function expectedE(surfaceId: number, vertical: number): number {
+  const base = surfaceAt(surfaceId).eGround
+  const e = base * (1 + PHYSICS.bounceGain * vertical * vertical)
+  return e > PHYSICS.eGroundMax ? PHYSICS.eGroundMax : e
+}
+
 describe('отскок от земли', () => {
-  it('скорость отскока равна eGround от скорости удара', () => {
+  it('отвесное падение отскакивает по потолку восстановления', () => {
     for (const surfaceId of [SURFACE_SAND, SURFACE_DIRT]) {
-      const e = surfaceAt(surfaceId).eGround
       const w = emptyWorld(surfaceId)
       const saka = w.bodies[0]!
       saka.z = 2
+      saka.vx = 0
+      saka.vy = 0
       saka.vz = -4
       saka.state = STATE_AIR
       const events: SimEvent[] = []
-      // доводим до касания
       while (saka.state === STATE_AIR && saka.z > saka.radius) stepWorld(w, events)
       const impact = events.find((x) => x.type === 'groundImpact')
       expect(impact, 'не было касания земли').toBeDefined()
       const impactSpeed = (impact as { speed: number }).speed
-      expect(saka.vz / impactSpeed).toBeCloseTo(e, 6)
+      // vertical = 1: горизонтальной скорости нет вовсе
+      expect(saka.vz / impactSpeed).toBeCloseTo(expectedE(surfaceId, 1), 6)
     }
+  })
+
+  it('скользящее касание отскакивает слабее отвесного', () => {
+    const surfaceId = SURFACE_DIRT
+    // отношение отскока к удару сразу в момент касания: дальше тело может
+    // уйти в скольжение и vz обнулится, так что берём именно первый отскок
+    const ratio = (vx: number) => {
+      const w = emptyWorld(surfaceId)
+      const saka = w.bodies[0]!
+      saka.z = 2
+      saka.vx = vx
+      saka.vz = -6
+      saka.state = STATE_AIR
+      const events: SimEvent[] = []
+      let before = saka.vz
+      while (events.every((x) => x.type !== 'groundImpact')) {
+        before = saka.vz
+        stepWorld(w, events)
+      }
+      const impact = events.find((x) => x.type === 'groundImpact')! as { speed: number }
+      return { e: saka.vz / impact.speed, before }
+    }
+    const steep = ratio(0)
+    const glancing = ratio(9)
+    expect(steep.e).toBeGreaterThan(glancing.e)
+    // отвесный упирается в потолок, скользящий остаётся около базового
+    expect(steep.e).toBeCloseTo(PHYSICS.eGroundMax, 6)
+    expect(glancing.e).toBeGreaterThan(surfaceAt(surfaceId).eGround * 0.9)
   })
 
   it('падение с высоты h даёт подскок примерно на e²·h', () => {
     const surfaceId = SURFACE_DIRT
-    const e = surfaceAt(surfaceId).eGround
     const h = 2
     const w = emptyWorld(surfaceId)
     const saka = w.bodies[0]!
@@ -76,7 +117,9 @@ describe('отскок от земли', () => {
       if (bounced) peak = Math.max(peak, saka.z - saka.radius)
       if (bounced && saka.vz < 0 && saka.z - saka.radius < peak) break
     }
-    const ideal = e * e * (h - saka.radius)
+    // удар отвесный, значит восстановление упирается в потолок
+    const eff = expectedE(surfaceId, 1)
+    const ideal = eff * eff * (h - saka.radius)
     // сопротивление воздуха съедает ещё несколько процентов — это ожидаемо
     expect(peak / ideal).toBeGreaterThan(0.85)
     expect(peak / ideal).toBeLessThan(1.0)
@@ -120,6 +163,16 @@ describe('энергия и целостность', () => {
         const events: SimEvent[] = []
         for (let i = 0; i < 900; i++) {
           stepWorld(w, events)
+          if (i === 899) {
+            // К концу все тела обязаны лежать ровно на рельефе: временное
+            // погружение допустимо, остаточное — нет.
+            const rel = reliefFor(w.seed, w.reliefAmp, w.bounds.halfWidth)
+            for (const body of w.bodies) {
+              if (body.removed || body.state !== STATE_RESTING) continue
+              const floor = heightAt(rel, body.x, body.y) + body.radius
+              expect(Math.abs(body.z - floor)).toBeLessThanOrEqual(PHYSICS.quantum * 2)
+            }
+          }
           for (let a = 0; a < w.bodies.length; a++) {
             const A = w.bodies[a]!
             if (A.removed) continue
@@ -135,9 +188,18 @@ describe('энергия и целостность', () => {
               expect(dist, `угол ${d}°, рыск ${yawDeg}°`).toBeGreaterThan(rsum * 0.45)
             }
           }
-          // тело не должно уходить под землю
+          // Тело не должно проваливаться сквозь землю. Пол не плоский, так
+          // что сравниваем с высотой рельефа ПОД телом, а не с радиусом.
+          // Допуск — 5% радиуса: в момент столкновения тело на миллиметр
+          // погружается и следующим тиком выталкивается, это нормально.
+          // Туннелирование выглядело бы совсем иначе — уход на сантиметры.
+          const relief = reliefFor(w.seed, w.reliefAmp, w.bounds.halfWidth)
           for (const body of w.bodies) {
-            if (!body.removed) expect(body.z).toBeGreaterThanOrEqual(body.radius - 1e-6)
+            if (body.removed) continue
+            const floor = heightAt(relief, body.x, body.y) + body.radius
+            expect(body.z, `угол ${d}°, рыск ${yawDeg}°`).toBeGreaterThanOrEqual(
+              floor - body.radius * 0.05,
+            )
           }
         }
       }
