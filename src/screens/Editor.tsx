@@ -7,6 +7,10 @@ import { DEFAULT_CUSTOM, customUrl, saveCustomLevel, type CustomLayout } from '@
 import { hasBackend } from '@/net/supabase'
 
 const MAX_ASYKS = 12
+const MAX_STONES = 4
+/** Радиус камня в редакторе, м. */
+const STONE_R = 0.16
+type Tool = 'asyk' | 'stone'
 /** Холст квадратный; поле занимает его с небольшим полем по краям. */
 const PAD = 1.18
 
@@ -53,6 +57,7 @@ export function Editor() {
 
   const [title, setTitle] = useState('')
   const [layout, setLayout] = useState<CustomLayout>(DEFAULT_CUSTOM)
+  const [tool, setTool] = useState<Tool>('asyk')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
@@ -78,17 +83,33 @@ export function Editor() {
       ? Math.hypot(p.x, p.y) <= layout.fieldRadius - asykR
       : Math.abs(p.x) <= layout.fieldRadius - asykR && Math.abs(p.y) <= layout.fieldRadius - asykR
 
+  const stones = layout.stones ?? []
+
   const tap = (e: React.PointerEvent<SVGSVGElement>) => {
     if (saved) return
     const p = toWorld(e.clientX, e.clientY)
     if (!p) return
 
-    // попали в существующий асык — убираем его
-    const hitIndex = layout.asyks.findIndex(
-      (a) => Math.hypot(a.x - p.x, a.y - p.y) < asykR * 1.6,
-    )
-    if (hitIndex >= 0) {
-      setLayout({ ...layout, asyks: layout.asyks.filter((_, i) => i !== hitIndex) })
+    // повторное касание по уже поставленному предмету убирает его —
+    // неважно, каким инструментом сейчас работаем
+    const asykHit = layout.asyks.findIndex((a) => Math.hypot(a.x - p.x, a.y - p.y) < asykR * 1.6)
+    if (asykHit >= 0) {
+      setLayout({ ...layout, asyks: layout.asyks.filter((_, i) => i !== asykHit) })
+      return
+    }
+    const stoneHit = stones.findIndex((a) => Math.hypot(a.x - p.x, a.y - p.y) < a.radius * 1.2)
+    if (stoneHit >= 0) {
+      setLayout({ ...layout, stones: stones.filter((_, i) => i !== stoneHit) })
+      return
+    }
+
+    if (tool === 'stone') {
+      if (stones.length >= MAX_STONES) return
+      // камень ставится ВНЕ кона: он закрывает дорогу, а не лежит в кону
+      if (inside(p)) return
+      if (stones.some((a) => Math.hypot(a.x - p.x, a.y - p.y) < a.radius + STONE_R)) return
+      if (layout.asyks.some((a) => Math.hypot(a.x - p.x, a.y - p.y) < asykR + STONE_R)) return
+      setLayout({ ...layout, stones: [...stones, { ...p, radius: STONE_R }] })
       return
     }
 
@@ -96,6 +117,7 @@ export function Editor() {
     if (!inside(p)) return
     // не даём асыкам слипаться: иначе кон стартует с телами внутри друг друга
     if (layout.asyks.some((a) => Math.hypot(a.x - p.x, a.y - p.y) < asykR * 2.1)) return
+    if (stones.some((a) => Math.hypot(a.x - p.x, a.y - p.y) < a.radius + asykR)) return
 
     setLayout({ ...layout, asyks: [...layout.asyks, p] })
   }
@@ -111,6 +133,11 @@ export function Editor() {
       ...layout,
       goal: Math.min(layout.goal, maxGoal),
       asyks: layout.asyks.map((a) => ({ x: quantize(a.x), y: quantize(a.y) })),
+      stones: stones.map((a) => ({
+        x: quantize(a.x),
+        y: quantize(a.y),
+        radius: quantize(a.radius),
+      })),
     }
     const id = await saveCustomLevel(title.trim(), clean)
     setSaving(false)
@@ -158,6 +185,12 @@ export function Editor() {
           strokeDasharray="0.06 0.05"
           opacity={0.75}
         />
+        {stones.map((st, i) => (
+          <g key={`s${st.x}:${st.y}:${i}`}>
+            <circle cx={st.x} cy={-st.y} r={st.radius} fill="#6f6558" stroke="#443d33" strokeWidth={0.014} />
+            <circle cx={st.x - st.radius * 0.28} cy={-st.y - st.radius * 0.3} r={st.radius * 0.3} fill="#8b8173" opacity={0.7} />
+          </g>
+        ))}
         {layout.asyks.map((a, i) => (
           <g key={`${a.x}:${a.y}:${i}`}>
             <ellipse cx={a.x} cy={-a.y} rx={asykR} ry={asykR * 0.78} fill="#f6ead2" stroke="#6b4f2a" strokeWidth={0.012} />
@@ -166,8 +199,28 @@ export function Editor() {
         ))}
       </svg>
 
+      <div className="mt-3 flex gap-2">
+        {(['asyk', 'stone'] as const).map((k) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setTool(k)}
+            className={`min-h-[44px] flex-1 rounded-2xl text-sm font-bold ${
+              tool === k
+                ? 'bg-gold-400 text-night-900'
+                : 'bg-white/10 text-steppe-100 ring-1 ring-white/15'
+            }`}
+          >
+            {t(k === 'asyk' ? 'editor.tool.asyk' : 'editor.tool.stone')}
+          </button>
+        ))}
+      </div>
       <p className="mt-2 text-center text-xs text-steppe-400">
-        {t('editor.count', { n: String(layout.asyks.length), max: String(MAX_ASYKS) })}
+        {t('editor.count', { n: String(layout.asyks.length), max: String(MAX_ASYKS) })} ·{' '}
+        {t('editor.stones', { n: String(stones.length), max: String(MAX_STONES) })}
+      </p>
+      <p className="mt-1 text-center text-xs text-steppe-500">
+        {t(tool === 'stone' ? 'editor.hint.stone' : 'editor.hint.asyk')}
       </p>
 
       {/* ── Настройки ────────────────────────────────────────────────────── */}
@@ -215,6 +268,21 @@ export function Editor() {
           hint={goalLabel}
           onChange={(v) => setLayout({ ...layout, goal: v })}
         />
+
+        <Slider
+          label={t('editor.relief')}
+          value={layout.relief ?? 0}
+          min={0}
+          max={0.05}
+          step={0.005}
+          hint={
+            (layout.relief ?? 0) === 0
+              ? t('editor.relief.flat')
+              : `${Math.round((layout.relief ?? 0) * 1000)} мм`
+          }
+          onChange={(v) => setLayout({ ...layout, relief: v })}
+        />
+        <p className="-mt-2 text-xs leading-relaxed text-steppe-400">{t('editor.relief.hint')}</p>
 
         <label className="flex min-h-[44px] items-center justify-between gap-3">
           <span className="text-sm text-steppe-200">{t('editor.penalty')}</span>

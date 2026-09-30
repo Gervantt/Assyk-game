@@ -10,9 +10,20 @@ import type { MatchState } from './types'
  */
 export interface OnlineRules {
   first: number
-  layout: { kind: string; count: number; fieldRadius?: number; shape?: string }
+  layout: {
+    kind: string
+    count: number
+    fieldRadius?: number
+    shape?: string
+    positions?: Array<{ x: number; y: number }>
+  }
   sakaInFieldPenalty: boolean
   throwsPerPlayer: number
+  /** камни-препятствия выбранной карты */
+  stones?: Array<{ x: number; y: number; radius: number }>
+  /** неровности пола, м */
+  relief?: number
+  mapId?: string
 }
 
 /**
@@ -41,6 +52,9 @@ export function buildOnlineMatch(
       comboBonus: false,
       goal: 0,
     },
+    // Камни и рельеф — часть карты. Сервер переигрывает матч этим же кодом,
+    // поэтому они обязаны попасть в мир и на клиенте, и при пересчёте ELO.
+    world: { obstacles: rules.stones ?? [], relief: rules.relief },
   })
 }
 

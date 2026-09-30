@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { knockedOutCount } from '@/game/rules'
-import { surfaceByName } from '@/physics'
+import { seedFromString, surfaceByName } from '@/physics'
 import { GameView } from '@/game/GameView'
 import { PowerBar } from '@/components/PowerBar'
 import { CameraToggle } from '@/components/CameraToggle'
@@ -49,6 +49,9 @@ export function CustomPlay() {
         shape: layout.shape,
         fieldRadius: layout.fieldRadius,
       },
+      // рельеф и камни — часть испытания, поэтому seed берётся из его id:
+      // у всех, кто открыл ссылку, кон должен быть один и тот же
+      seed: seedFromString(`asyq-custom-${levelId}`),
       rules: {
         throwsPerPlayer: layout.throws,
         goal: layout.goal,
@@ -57,13 +60,17 @@ export function CustomPlay() {
         comboBonus: false,
       },
       // неизвестное имя поверхности функция сама сводит к безопасному значению
-      world: { surfaceId: surfaceByName(layout.surface as never) },
+      world: {
+        surfaceId: surfaceByName(layout.surface as never),
+        obstacles: layout.stones ?? [],
+        relief: layout.relief,
+      },
     })
     return () => {
       leave()
       usePopupStore.getState().clear()
     }
-  }, [layout, startSession, leave])
+  }, [layout, levelId, startSession, leave])
 
   if (row === 'missing') {
     return (

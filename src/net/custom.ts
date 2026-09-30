@@ -13,6 +13,13 @@ export interface CustomLayout {
   goal: number
   penalty: boolean
   surface: string
+  /** камни-препятствия: закрывают прямую дорогу, их приходится перекидывать */
+  stones?: Array<{ x: number; y: number; radius: number }>
+  /**
+   * Неровности пола, м. 0 — идеально ровно. Рельеф выводится из seed
+   * испытания, поэтому у всех, кто играет по ссылке, он одинаков.
+   */
+  relief?: number
 }
 
 export interface CustomLevelRow {
@@ -38,6 +45,8 @@ export const DEFAULT_CUSTOM: CustomLayout = {
   goal: 0,
   penalty: true,
   surface: 'sand',
+  stones: [],
+  relief: 0.022,
 }
 
 export async function saveCustomLevel(

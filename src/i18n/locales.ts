@@ -525,6 +525,95 @@ export const dict = {
   },
   'editor.feedLink': { kk: 'Басқалардың сынақтары', ru: 'Испытания игроков', en: 'Player challenges' },
 
+  'editor.tool.asyk': { kk: 'Асық қою', ru: 'Ставить асык', en: 'Place asyq' },
+  'editor.tool.stone': { kk: 'Тас қою', ru: 'Ставить камень', en: 'Place stone' },
+  'editor.stones': { kk: 'Тас: {n} / {max}', ru: 'Камней: {n} / {max}', en: 'Stones: {n} / {max}' },
+  'editor.hint.asyk': {
+    kk: 'Қонның ІШІНЕ түрт.',
+    ru: 'Нажимай ВНУТРИ кона.',
+    en: 'Tap INSIDE the kon.',
+  },
+  'editor.hint.stone': {
+    kk: 'Қоннан ТЫС түрт: тас жолды жабады, оны асып лақтыру керек.',
+    ru: 'Нажимай СНАРУЖИ кона: камень закрывает дорогу, его надо перекидывать.',
+    en: 'Tap OUTSIDE the kon: a stone blocks the lane and has to be lobbed over.',
+  },
+  'editor.relief': { kk: 'Жер бедері', ru: 'Неровности пола', en: 'Ground relief' },
+  'editor.relief.flat': { kk: 'тегіс', ru: 'ровно', en: 'flat' },
+  'editor.relief.hint': {
+    kk: 'Бедер сырғанап келе жатқан сақаны бұрып жібереді. Ол seed-тен шығады, сондықтан бәрінде бірдей.',
+    ru: 'Неровности уводят скользящую сақа в сторону. Рельеф выводится из seed, поэтому у всех одинаковый.',
+    en: 'Bumps push a sliding saqa off line. The relief comes from the seed, so it is the same for everyone.',
+  },
+
+  'welcome.title': { kk: 'Қош келдің!', ru: 'Привет!', en: 'Welcome!' },
+  'welcome.subtitle': {
+    kk: 'Атыңды айт — кестелерде «Қонақ 35A6» емес, сен тұрасың.',
+    ru: 'Назовись — в таблицах будет твоё имя, а не «Қонақ 35A6».',
+    en: 'Tell us your name — leaderboards will show it instead of “Qonaq 35A6”.',
+  },
+  'welcome.language': { kk: 'Тіл', ru: 'Язык', en: 'Language' },
+  'welcome.name': { kk: 'Атың', ru: 'Имя', en: 'Name' },
+  'welcome.namePlaceholder': { kk: 'Мысалы, Әлібек', ru: 'Например, Алибек', en: 'For example, Alibek' },
+  'welcome.nameHint': {
+    kk: 'Екі таңбадан жиырма төртке дейін.',
+    ru: 'От двух до двадцати четырёх символов.',
+    en: 'Between two and twenty-four characters.',
+  },
+  'welcome.avatar': { kk: 'Белгің', ru: 'Значок', en: 'Sticker' },
+  'welcome.start': { kk: 'Ойнауды бастау', ru: 'Начать играть', en: 'Start playing' },
+  'welcome.note': {
+    kk: 'Пошта да, құпиясөз де керек емес — бірден ойнай бересің. Прогресті басқа құрылғыға сақтауды кейін профильде қосуға болады.',
+    ru: 'Ни почты, ни пароля — играть можно сразу. Сохранить прогресс на другое устройство можно позже, в профиле.',
+    en: 'No email, no password — you can play right away. You can save progress to another device later, in your profile.',
+  },
+
+  'map.row': { kk: 'Қатар', ru: 'Ряд', en: 'Row' },
+  'map.row.d': {
+    kk: 'Бес асық қатарда. Бастауға ыңғайлы.',
+    ru: 'Пять асыков в ряд. Хорошо для начала.',
+    en: 'Five asyqs in a row. A good start.',
+  },
+  'map.circle': { kk: 'Шеңбер', ru: 'Круг', en: 'Circle' },
+  'map.circle.d': {
+    kk: 'Алты асық шеңбер бойымен: ортасынан өтіп кетуге болады.',
+    ru: 'Шесть асыков по кругу: через середину можно проскочить.',
+    en: 'Six asyqs in a ring: you can slip through the middle.',
+  },
+  'map.gate': { kk: 'Қақпа', ru: 'Ворота', en: 'The gate' },
+  'map.gate.d': {
+    kk: 'Екі тас тар өткел қалдырады. Күшті тік лақтыру енді өтпейді.',
+    ru: 'Два камня оставляют узкий проход. Сильный прямой бросок больше не проходит.',
+    en: 'Two stones leave a narrow gap. A hard straight throw no longer works.',
+  },
+  'map.wall': { kk: 'Қабырға', ru: 'Стена', en: 'The wall' },
+  'map.wall.d': {
+    kk: 'Тас дәл ортада: асыра лақтыру керек.',
+    ru: 'Камень прямо по центру: придётся перекидывать.',
+    en: 'A stone dead centre: you have to lob over it.',
+  },
+  'map.rough': { kk: 'Кедір-бұдыр', ru: 'Неровный двор', en: 'Rough yard' },
+  'map.rough.d': {
+    kk: 'Жер қатты бұдыр: сырғанаған сақа жолдан ауытқиды.',
+    ru: 'Пол сильно неровный: скользящую сақа уводит с линии.',
+    en: 'A very uneven floor: a sliding saqa drifts off line.',
+  },
+
+  'online.pickMap': { kk: 'Кон таңдау', ru: 'Выбери кон', en: 'Choose the kon' },
+  'online.pickMap.d': {
+    kk: 'Екеуіңде де дәл осы кон болады.',
+    ru: 'У вас обоих будет ровно этот кон.',
+    en: 'Both of you get exactly this kon.',
+  },
+  'online.myChallenge': { kk: 'Өз сынағым', ru: 'Моё испытание', en: 'My challenge' },
+  'online.myChallenge.d': {
+    kk: 'Редакторда жасаған конмен ойнау.',
+    ru: 'Сыграть на коне, который собрал в редакторе.',
+    en: 'Play on a kon you built in the editor.',
+  },
+  'online.createMatch': { kk: 'Матч құру', ru: 'Создать матч', en: 'Create match' },
+  'online.onMap': { kk: 'Кон: {name}', ru: 'Кон: {name}', en: 'Kon: {name}' },
+
   'custom.title': { kk: 'Ойыншы сынақтары', ru: 'Испытания игроков', en: 'Player challenges' },
   'custom.create': { kk: 'Өз сынағыңды жаса', ru: 'Создать своё испытание', en: 'Create your own' },
   'custom.popular': { kk: 'Танымал', ru: 'Популярные', en: 'Popular' },

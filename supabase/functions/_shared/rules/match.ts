@@ -61,6 +61,8 @@ export type WorldExtras = Pick<
   | 'boundsHalfHeight'
   // поверхность кона задаёт уровень или его автор, но НЕ скин арены
   | 'surfaceId'
+  // неровности пола: тоже часть уровня
+  | 'relief'
 >
 
 export interface CreateMatchOptions {

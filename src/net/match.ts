@@ -50,9 +50,22 @@ export interface MatchSnapshot {
 export interface MatchRules {
   /** кто начинает: 0 — создатель, 1 — приглашённый; решено подбрасыванием */
   first: number
-  layout: { kind: string; count: number; fieldRadius?: number; shape?: string }
+  layout: {
+    kind: string
+    count: number
+    fieldRadius?: number
+    shape?: string
+    /** явные позиции: кон из редактора испытаний */
+    positions?: Array<{ x: number; y: number }>
+  }
   sakaInFieldPenalty: boolean
   throwsPerPlayer: number
+  /** камни-препятствия выбранной карты */
+  stones?: Array<{ x: number; y: number; radius: number }>
+  /** неровности пола выбранной карты, м */
+  relief?: number
+  /** id карты или пользовательского испытания — только для показа */
+  mapId?: string
 }
 
 export async function createMatch(

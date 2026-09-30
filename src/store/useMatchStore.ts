@@ -1,5 +1,16 @@
 import { create } from 'zustand'
 import { drawFirstPlayer, buildOnlineMatch, type MatchState } from '@/game/rules'
+import { DEFAULT_MAP, mapById } from '@/game/maps'
+
+/** Кон, собранный из пользовательского испытания, а не из готовой карты. */
+export interface OnlineMapOverride {
+  layout: MatchRules['layout']
+  stones?: MatchRules['stones']
+  relief?: number
+  throwsPerPlayer: number
+  sakaInFieldPenalty: boolean
+  mapId?: string
+}
 import { stateHash } from '@/physics'
 import { freshSeed } from '@/lib/format'
 import {
@@ -19,8 +30,6 @@ import { useI18n, translate } from '@/i18n'
 
 export type OnlineStatus = 'idle' | 'connecting' | 'waiting' | 'playing' | 'finished' | 'error'
 
-const LAYOUT = { kind: 'row' as const, count: 5, fieldRadius: 0.93 }
-const THROWS = 5
 interface MatchStore {
   status: OnlineStatus
   matchId: string | null
@@ -33,8 +42,8 @@ interface MatchStore {
   desyncs: number
   error: string | null
 
-  /** создать матч и получить ссылку */
-  host: () => Promise<string | null>
+  /** создать матч на выбранной карте и получить ссылку */
+  host: (mapId?: string, custom?: OnlineMapOverride) => Promise<string | null>
   /** открыть матч по ссылке */
   open: (matchId: string) => Promise<void>
   leave: () => void
@@ -87,7 +96,7 @@ export const useMatchStore = create<MatchStore>((set, get) => ({
   desyncs: 0,
   error: null,
 
-  host: async () => {
+  host: async (mapId, custom) => {
     set({ status: 'connecting', error: null })
     const myId = await currentUserId()
     if (!myId) {
@@ -97,12 +106,26 @@ export const useMatchStore = create<MatchStore>((set, get) => ({
 
     const seed = freshSeed()
     const { first } = drawFirstPlayer(seed, 2)
-    const rules: MatchRules = {
-      first,
-      layout: LAYOUT,
-      sakaInFieldPenalty: true,
-      throwsPerPlayer: THROWS,
-    }
+    const map = mapById(mapId ?? DEFAULT_MAP.id) ?? DEFAULT_MAP
+    const rules: MatchRules = custom
+      ? {
+          first,
+          layout: custom.layout,
+          sakaInFieldPenalty: custom.sakaInFieldPenalty,
+          throwsPerPlayer: custom.throwsPerPlayer,
+          stones: custom.stones,
+          relief: custom.relief,
+          mapId: custom.mapId,
+        }
+      : {
+          first,
+          layout: map.layout,
+          sakaInFieldPenalty: map.sakaInFieldPenalty,
+          throwsPerPlayer: map.throwsPerPlayer,
+          stones: map.stones,
+          relief: map.relief,
+          mapId: map.id,
+        }
     // Имена здесь заведомо неизвестны: соперник ещё не открыл ссылку.
     // Они не хранятся в состоянии — restore() всегда берёт их из профилей.
     const state = buildOnlineMatch(seed, rules, ['', ''])

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createWorld, stateHash } from '@/physics'
+import { BODY_ASYK, BODY_STONE, createWorld, stateHash } from '@/physics'
 import { findThrow } from './helpers'
 import { applyThrow } from '../match'
 import { buildOnlineMatch, replayMatch, type OnlineRules } from '../replay'
@@ -70,5 +70,56 @@ describe('пересчёт матча на сервере', () => {
     expect(local.match.status).toBe('finished')
     const used = local.match.players.map((p) => p.throwsUsed)
     expect(Math.abs(used[0]! - used[1]!)).toBeLessThanOrEqual(1)
+  })
+})
+
+describe('карта матча доезжает до сервера целиком', () => {
+  const WITH_STONES: OnlineRules = {
+    ...RULES,
+    layout: { kind: 'row', count: 4, fieldRadius: 0.85 },
+    stones: [
+      { x: -0.52, y: -1.25, radius: 0.2 },
+      { x: 0.52, y: -1.25, radius: 0.2 },
+    ],
+    relief: 0.03,
+  }
+
+  it('камни попадают в мир', () => {
+    const m = buildOnlineMatch(SEED, WITH_STONES, ['A', 'B'])
+    expect(m.world.bodies.filter((b) => b.kind === BODY_STONE)).toHaveLength(2)
+  })
+
+  it('рельеф попадает в мир', () => {
+    expect(buildOnlineMatch(SEED, WITH_STONES, ['A', 'B']).world.reliefAmp).toBe(0.03)
+    expect(buildOnlineMatch(SEED, { ...WITH_STONES, relief: 0 }, ['A', 'B']).world.reliefAmp).toBe(0)
+  })
+
+  it('пересчёт на сервере даёт тот же результат, что игра на клиенте', () => {
+    // если бы сервер собирал кон без камней, хеши разошлись бы с первого хода
+    let local = buildOnlineMatch(SEED, WITH_STONES, ['A', 'B'])
+    const moves = []
+    for (const input of [HIT, MISS, HIT, MISS]) {
+      if (local.status === 'finished') break
+      local = applyThrow(local, input).match
+      moves.push({ input, result_hash: stateHash(local.world) })
+    }
+    const server = replayMatch(SEED, WITH_STONES, moves, ['A', 'B'])
+    expect(server.mismatchAt).toBeNull()
+    expect(stateHash(server.match.world)).toBe(stateHash(local.world))
+  })
+
+  it('кон из редактора собирается по явным позициям', () => {
+    const positions = [
+      { x: -0.2, y: 0.1 },
+      { x: 0.25, y: -0.15 },
+      { x: 0, y: 0.3 },
+    ]
+    const m = buildOnlineMatch(SEED, {
+      ...RULES,
+      layout: { kind: 'custom', count: positions.length, fieldRadius: 0.9, positions },
+    }, ['A', 'B'])
+    const asyks = m.world.bodies.filter((b) => b.kind === BODY_ASYK)
+    expect(asyks).toHaveLength(3)
+    expect(asyks.map((b) => b.x)).toEqual(positions.map((p) => p.x))
   })
 })

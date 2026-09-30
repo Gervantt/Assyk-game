@@ -98,3 +98,32 @@ export function markTutorialDone(): void {
     /* не страшно: обучение просто предложится снова */
   }
 }
+
+const ONBOARD_KEY = 'asyq.onboard.v1'
+
+export interface Onboarding {
+  name: string
+  avatar: string
+}
+
+/**
+ * Игрок уже представился. Отметка локальная: она нужна, чтобы не показывать
+ * экран знакомства повторно даже без сети, когда профиль из облака ещё
+ * не подтянулся.
+ */
+export function onboarding(): Onboarding | null {
+  try {
+    const raw = localStorage.getItem(ONBOARD_KEY)
+    return raw ? (JSON.parse(raw) as Onboarding) : null
+  } catch {
+    return null
+  }
+}
+
+export function markOnboarded(name: string, avatar: string): void {
+  try {
+    localStorage.setItem(ONBOARD_KEY, JSON.stringify({ name, avatar }))
+  } catch {
+    /* приватный режим — спросим имя снова при следующем запуске */
+  }
+}
