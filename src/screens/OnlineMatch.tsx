@@ -8,6 +8,7 @@ import { PowerBar } from '@/components/PowerBar'
 import { useT } from '@/i18n'
 import { usePopupStore } from '@/game/fx/popupStore'
 import { useGameStore } from '@/store/useGameStore'
+import { useAuthStore } from '@/store/useAuthStore'
 import { installMatchDebug, useMatchStore } from '@/store/useMatchStore'
 import { requestRating, type RatingChange } from '@/net/ranked'
 
@@ -57,7 +58,11 @@ export function OnlineMatch() {
     if (!ranked || status !== 'finished' || !matchId || !myId || rating) return
     let cancelled = false
     void requestRating(matchId, myId).then((r) => {
-      if (!cancelled && r) setRating(r)
+      if (cancelled || !r) return
+      setRating(r)
+      // рейтинг лежит в профиле: без перечитывания экран «Рейтинговый матч»
+      // продолжал бы показывать старое число
+      void useAuthStore.getState().reload()
     })
     return () => {
       cancelled = true

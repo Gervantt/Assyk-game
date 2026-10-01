@@ -21,9 +21,11 @@ export function Welcome() {
   const locale = useI18n((s) => s.locale)
   const setLocale = useI18n((s) => s.setLocale)
   const save = useAuthStore((s) => s.save)
+  const universities = useAuthStore((s) => s.universities)
 
   const [name, setName] = useState('')
   const [avatar, setAvatar] = useState<string>(AVATARS[0])
+  const [university, setUniversity] = useState('')
   const [busy, setBusy] = useState(false)
 
   const clean = name.trim()
@@ -34,7 +36,7 @@ export function Welcome() {
     setBusy(true)
     // Профиль может не сохраниться (нет сети) — это не повод не пускать
     // в игру: имя и аватар всё равно останутся локально в отметке.
-    await save({ username: clean, avatar, locale })
+    await save({ username: clean, avatar, locale, university_id: university || null })
     markOnboarded(clean, avatar)
     notifyOnboarded()
     setBusy(false)
@@ -110,6 +112,29 @@ export function Welcome() {
           ))}
         </div>
       </div>
+
+      {/* ── Вуз: необязательно ───────────────────────────────────────── */}
+      {universities.length > 0 && (
+        <div className="mt-6">
+          <p className="text-xs font-bold uppercase tracking-widest text-gold-400">
+            {t('welcome.university')}
+          </p>
+          <select
+            value={university}
+            onChange={(e) => setUniversity(e.target.value)}
+            aria-label={t('welcome.university')}
+            className="mt-2 min-h-[52px] w-full rounded-2xl bg-white/10 px-4 text-steppe-50 ring-1 ring-white/15 outline-none focus:ring-gold-400"
+          >
+            <option value="">{t('profile.university.none')}</option>
+            {universities.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.name} · {u.city}
+              </option>
+            ))}
+          </select>
+          <p className="mt-2 text-xs text-steppe-400">{t('welcome.university.hint')}</p>
+        </div>
+      )}
 
       <button
         type="button"

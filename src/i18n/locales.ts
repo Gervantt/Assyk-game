@@ -561,6 +561,12 @@ export const dict = {
     en: 'Between two and twenty-four characters.',
   },
   'welcome.avatar': { kk: 'Белгің', ru: 'Значок', en: 'Sticker' },
+  'welcome.university': { kk: 'Университет (міндетті емес)', ru: 'Университет (необязательно)', en: 'University (optional)' },
+  'welcome.university.hint': {
+    kk: 'Лигада сенің ұпайларың вузыңа жазылады. Қаламасаң — өткізіп жібер, кейін профильде таңдауға болады.',
+    ru: 'В лиге твои очки пойдут в зачёт вуза. Не хочешь — пропусти, выбрать можно позже в профиле.',
+    en: 'In the league your points count for your university. Skip it if you like — you can pick one later in your profile.',
+  },
   'welcome.start': { kk: 'Ойнауды бастау', ru: 'Начать играть', en: 'Start playing' },
   'welcome.note': {
     kk: 'Пошта да, құпиясөз де керек емес — бірден ойнай бересің. Прогресті басқа құрылғыға сақтауды кейін профильде қосуға болады.',

@@ -84,6 +84,27 @@ select '12. рейтинги после матча: ' ||
   string_agg(username || '=' || rating::text, ', ' order by username)
   from public.profiles where university_id is not null;
 
+-- ── Результат виден ОБОИМ игрокам (раньше второй видел «Считаем…» вечно) ───
+set role authenticated;
+set request.jwt.claim.sub = '22222222-0000-0000-0000-000000000002';
+select '12a. проигравший читает свой результат: ' ||
+  (select (r ->> 'delta2') || ' → ' || (r ->> 'rating2') from (select public.ranked_result((select id from public.matches where mode = 'ranked' limit 1)) r) x);
+select '12b. запасной путь на уже посчитанном матче идемпотентен: already=' ||
+  (select (public.claim_ranked_result((select id from public.matches where mode = 'ranked' limit 1)) ->> 'already'));
+
+set request.jwt.claim.sub = '33333333-0000-0000-0000-000000000003';
+select '12c. посторонний результат не читает (должна быть ошибка):';
+select public.ranked_result((select id from public.matches where mode = 'ranked' limit 1));
+
+reset role;
+update public.app_flags set value = false where key = 'ranked_fallback';
+set role authenticated;
+set request.jwt.claim.sub = '22222222-0000-0000-0000-000000000002';
+select '12d. флаг выключен — запасной путь закрыт (должна быть ошибка):';
+select public.claim_ranked_result((select id from public.matches where mode = 'ranked' limit 1));
+reset role;
+update public.app_flags set value = true where key = 'ranked_fallback';
+
 -- ── Лига вузов ─────────────────────────────────────────────────────────────
 insert into public.daily_results (user_id, date, score, throws, accuracy) values
   ('11111111-0000-0000-0000-000000000001', current_date, 4, 5, 0.8),
